@@ -313,7 +313,6 @@
     </div>
 
     <script>
-        // مصفوفة البيانات فارغة تماماً
         let expensesData = [];
         let currentlyDisplayedData = [];
 
@@ -361,8 +360,17 @@
             document.getElementById('tableTotalSum').innerText = currentTableSum.toLocaleString() + ' د.ل';
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function openModal(id) { 
+            if (id === 'addExpenseModal') {
+                document.getElementById('expenseForm').reset();
+                document.getElementById('expDate').valueAsDate = new Date();
+            }
+            document.getElementById(id).style.display = 'flex'; 
+        }
+
+        function closeModal(id) { 
+            document.getElementById(id).style.display = 'none'; 
+        }
 
         function quickAdd(selectId, labelName) {
             const newItem = prompt(`أدخل اسم ${labelName} الجديد:`);
@@ -370,7 +378,6 @@
                 const value = newItem.trim();
                 const targetSelect = document.getElementById(selectId);
 
-                // التأكد من عدم تكرار القيمة في القائمة
                 let exists = false;
                 for (let i = 0; i < targetSelect.options.length; i++) {
                     if (targetSelect.options[i].value === value) {
@@ -380,13 +387,11 @@
                 }
 
                 if (!exists) {
-                    // إضافة الخيار لنقل مدخلات الإضافة
                     const opt = document.createElement('option');
                     opt.value = value;
                     opt.innerHTML = value;
                     targetSelect.appendChild(opt);
 
-                    // إضافة الخيار لقائمة الفلترة في نافذة التقارير تلقائياً
                     let reportSelectId = '';
                     if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
                     if (selectId === 'citySelect') reportSelectId = 'reportCity';
@@ -420,6 +425,8 @@
             };
             expensesData.unshift(newExpense);
             resetFilter();
+            document.getElementById('expenseForm').reset();
+            document.getElementById('expDate').valueAsDate = new Date();
             closeModal('addExpenseModal');
         }
 
