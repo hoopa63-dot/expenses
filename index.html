@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة إدارة مصروفات الشركة</title>
+    <title>منظومة إدارة مصروفات شركة أركان الدوائية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
@@ -114,7 +114,7 @@
 
     <div class="header-bar">
         <div class="header-title">
-            <h1>منظومة إدارة مصروفات الشركة</h1>
+            <h1>منظومة إدارة مصروفات شركة أركان الدوائية</h1>
             <p>التقارير الشهرية وإدخال الحركات</p>
         </div>
         <div class="action-buttons">
@@ -445,7 +445,6 @@
             renderTable(filtered);
         }
 
-        // دالة تجميع الفلاتر وتطبيقاها على المنظومة والواجهة
         function generateReport(e) {
             e.preventDefault();
             const fromDate = document.getElementById('reportFromDate').value;
@@ -494,6 +493,7 @@
 
         function exportToFormattedExcel() {
             let totalSum = 0;
+            
             let excelHTML = `
                 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
                 <head>
@@ -514,22 +514,43 @@
                     <![endif]-->
                     <style>
                         table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
-                        th { background-color: #1e3c72; color: #ffffff; font-weight: bold; border: 1px solid #102a56; text-align: center; padding: 10px; }
-                        td { border: 1px solid #dcdcdc; text-align: center; padding: 8px; }
-                        .total-row td { background-color: #e2e8f0; font-weight: bold; border-top: 2px solid #1e3c72; }
+                        th { 
+                            background-color: #1e3c72; 
+                            color: #ffffff; 
+                            font-weight: bold; 
+                            border: 1px solid #102a56; 
+                            text-align: center; 
+                            padding: 6px 10px; 
+                            font-size: 9pt;
+                        }
+                        td { 
+                            border: 1px solid #dcdcdc; 
+                            text-align: center; 
+                            padding: 5px 8px; 
+                            font-size: 9pt;
+                            color: #333333;
+                        }
+                        tr:nth-child(even) td { background-color: #f9fbfd; }
+                        .total-row td { 
+                            background-color: #e2e8f0; 
+                            font-weight: bold; 
+                            border-top: 2px solid #1e3c72; 
+                            color: #0f172a;
+                            font-size: 9pt;
+                        }
                     </style>
                 </head>
                 <body dir="rtl">
                     <table>
                         <thead>
                             <tr>
-                                <th>التاريخ</th>
-                                <th>التصنيف</th>
-                                <th>المدينة</th>
-                                <th>القسم / مركز التكلفة</th>
-                                <th>طريقة الدفع</th>
-                                <th>المبلغ (د.ل)</th>
-                                <th>البيان / الوصف</th>
+                                <th style="width:100px;">التاريخ</th>
+                                <th style="width:140px;">التصنيف</th>
+                                <th style="width:100px;">المدينة</th>
+                                <th style="width:160px;">القسم / مركز التكلفة</th>
+                                <th style="width:120px;">طريقة الدفع</th>
+                                <th style="width:110px;">المبلغ (د.ل)</th>
+                                <th style="width:250px;">البيان / الوصف</th>
                             </tr>
                         </thead>
                         <tbody>`;
@@ -550,7 +571,7 @@
 
             excelHTML += `
                         <tr class="total-row">
-                            <td colspan="5" style="text-align: left; font-weight: bold;">إجمالي حركات التقرير:</td>
+                            <td colspan="5" style="text-align: left; font-weight: bold; padding-left:10px;">إجمالي حركات التقرير:</td>
                             <td style="color: #0088ff; font-weight: bold;">${totalSum.toLocaleString()}</td>
                             <td></td>
                         </tr>
