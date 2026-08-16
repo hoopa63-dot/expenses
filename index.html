@@ -137,6 +137,15 @@
             color: #475569;
             font-weight: 600;
         }
+        tfoot tr {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        tfoot td {
+            border-top: 2px solid #cbd5e1;
+            color: #0f172a;
+            font-size: 15px;
+        }
         .badge-cat {
             background: #e2e8f0;
             padding: 4px 10px;
@@ -168,8 +177,8 @@
             background: white;
             width: 90%;
             max-width: 520px;
-            max-height: 85vh; /* تحديد أقصى ارتفاع بنسبة 85% من الشاشة */
-            overflow-y: auto; /* تفعيل شريط التمرير العمودي عند زيادة المحتوى */
+            max-height: 85vh;
+            overflow-y: auto;
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
@@ -311,6 +320,13 @@
                 <tbody id="expenseTableBody">
                     <!-- Dynamic Data -->
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5" style="text-align: left; font-weight: bold;">إجمالي حركات الجدول المعروضة:</td>
+                        <td><strong id="tableTotalSum" style="color: #0088ff;">0.00 د.ل</strong></td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -337,6 +353,8 @@
                             <option value="كهرباء/مياه/إنترنت">كهرباء/مياه/إنترنت</option>
                             <option value="صيانة وتشغيل">صيانة وتشغيل</option>
                             <option value="مستلزمات مكتبية">مستلزمات مكتبية</option>
+                            <option value="قرطاسية">قرطاسية</option>
+                            <option value="الدعاية">الدعاية</option>
                         </select>
                         <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')" title="إضافة تصنيف">+</button>
                     </div>
@@ -365,6 +383,7 @@
                             <option value="قسم المبيعات">قسم المبيعات</option>
                             <option value="قسم المخازن">قسم المخازن</option>
                             <option value="التشغيل والصيانة">التشغيل والصيانة</option>
+                            <option value="الدعاية">الدعاية</option>
                         </select>
                         <button type="button" class="btn-plus" onclick="quickAdd('deptSelect', 'القسم')" title="إضافة قسم">+</button>
                     </div>
@@ -427,6 +446,8 @@
                             <option value="كهرباء/مياه/إنترنت">كهرباء/مياه/إنترنت</option>
                             <option value="صيانة وتشغيل">صيانة وتشغيل</option>
                             <option value="مستلزمات مكتبية">مستلزمات مكتبية</option>
+                            <option value="قرطاسية">قرطاسية</option>
+                            <option value="الدعاية">الدعاية</option>
                         </select>
                     </div>
                 </div>
@@ -457,7 +478,7 @@
     <!-- JavaScript Logic -->
     <script>
         let expensesData = [
-            { id: 1, date: '2026-08-15', category: 'إيجارات', city: 'طرابلس', dept: 'الإدارة العامة', payMethod: 'تحويل بنكي', amount: 4500, desc: 'إيجار مقر الشركة - شهر أغسطس' },
+            { id: 1, date: '2026-08-15', category: 'إيجارات', city: 'طرابلس', dept: 'الإدارة العامة', payMethod: 'تحويل بنكي', amount: 1200, desc: 'إيجار مقر الشركة - شهر أغسطس' },
             { id: 2, date: '2026-08-12', category: 'كهرباء/مياه/إنترنت', city: 'بنغازي', dept: 'التشغيل والصيانة', payMethod: 'نقداً', amount: 850, desc: 'فاتورة الألياف البصرية والكهرباء' },
             { id: 3, date: '2026-08-05', category: 'مستلزمات مكتبية', city: 'مصراتة', dept: 'قسم المبيعات', payMethod: 'نقداً', amount: 320, desc: 'شراء القرطاسية وأوراق طباعة' }
         ];
@@ -495,12 +516,15 @@
             document.getElementById('recordCount').innerText = expensesData.length;
         }
 
-        // Render Table Data
+        // Render Table Data & Calculate Footer Total
         function renderTable(data) {
             const tbody = document.getElementById('expenseTableBody');
             tbody.innerHTML = '';
 
+            let currentTableSum = 0;
+
             data.forEach(item => {
+                currentTableSum += item.amount;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${item.date}</td>
@@ -516,6 +540,9 @@
                 `;
                 tbody.appendChild(tr);
             });
+
+            // Update footer sum dynamically for displayed data
+            document.getElementById('tableTotalSum').innerText = currentTableSum.toLocaleString() + ' د.ل';
         }
 
         function openModal(modalId) {
@@ -535,6 +562,15 @@
                 opt.innerHTML = newItem.trim();
                 opt.selected = true;
                 select.appendChild(opt);
+
+                // Sync with report filters if category is added
+                if (selectId === 'categorySelect') {
+                    const reportSelect = document.getElementById('reportCategory');
+                    const repOpt = document.createElement('option');
+                    repOpt.value = newItem.trim();
+                    repOpt.innerHTML = newItem.trim();
+                    reportSelect.appendChild(repOpt);
+                }
             }
         }
 
@@ -596,7 +632,8 @@
             const filtered = expensesData.filter(item => 
                 item.desc.toLowerCase().includes(query) || 
                 item.category.toLowerCase().includes(query) ||
-                item.city.toLowerCase().includes(query)
+                item.city.toLowerCase().includes(query) ||
+                item.dept.toLowerCase().includes(query)
             );
             renderTable(filtered);
         }
