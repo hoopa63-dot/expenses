@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة إدارة مصروفات شركة أركان الدوائية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- مكتبة SheetJS لتصدير إكسل الحقيقي -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
         body { background-color: #f4f7f6; color: #333; direction: rtl; }
@@ -264,7 +262,7 @@
         </div>
     </div>
 
-    <!-- نافذة تقارير المصروفات -->
+    <!-- نافذة تقارير المصروفات الموسعة -->
     <div class="modal" id="reportsModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -322,96 +320,74 @@
     <script>
         let expensesData = [];
         let currentlyDisplayedData = [];
-        let optionsStore = {
-            categories: [],
-            cities: [],
-            depts: [],
-            payMethods: []
-        };
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('expDate').valueAsDate = new Date();
             
             const savedData = localStorage.getItem('arkan_expenses');
-            if (savedData) expensesData = JSON.parse(savedData);
-
-            const savedOptions = localStorage.getItem('arkan_options');
-            if (savedOptions) {
-                optionsStore = JSON.parse(savedOptions);
-            } else {
-                extractOptionsFromData();
+            if (savedData) {
+                expensesData = JSON.parse(savedData);
+                populateDynamicSelects();
             }
 
-            refreshAllSelects();
             renderTable(expensesData);
             updateKPIs(expensesData);
         });
 
         function saveToLocalStorage() {
             localStorage.setItem('arkan_expenses', JSON.stringify(expensesData));
-            localStorage.setItem('arkan_options', JSON.stringify(optionsStore));
         }
 
-        function extractOptionsFromData() {
+        function populateDynamicSelects() {
+            const categories = new Set();
+            const cities = new Set();
+            const depts = new Set();
+            const payMethods = new Set();
+
             expensesData.forEach(item => {
-                if (item.category && !optionsStore.categories.includes(item.category)) optionsStore.categories.push(item.category);
-                if (item.city && !optionsStore.cities.includes(item.city)) optionsStore.cities.push(item.city);
-                if (item.dept && !optionsStore.depts.includes(item.dept)) optionsStore.depts.push(item.dept);
-                if (item.payMethod && !optionsStore.payMethods.includes(item.payMethod)) optionsStore.payMethods.push(item.payMethod);
-            });
-        }
-
-        function refreshAllSelects() {
-            populateSelectOptions('categorySelect', 'reportCategory', optionsStore.categories);
-            populateSelectOptions('citySelect', 'reportCity', optionsStore.cities);
-            populateSelectOptions('deptSelect', 'reportDept', optionsStore.depts);
-            populateSelectOptions('paySelect', 'reportPayMethod', optionsStore.payMethods);
-        }
-
-        function populateSelectOptions(selectId, reportSelectId, arrayList) {
-            const selectEl = document.getElementById(selectId);
-            const reportEl = document.getElementById(reportSelectId);
-            
-            const selectedVal = selectEl.value;
-            selectEl.innerHTML = selectEl.options[0].outerHTML;
-            reportEl.innerHTML = '<option value="الكل">الكل</option>';
-
-            arrayList.forEach(val => {
-                const opt = new Option(val, val);
-                selectEl.add(opt);
-
-                const reportOpt = new Option(val, val);
-                reportEl.add(reportOpt);
+                if (item.category) categories.add(item.category);
+                if (item.city) cities.add(item.city);
+                if (item.dept) depts.add(item.dept);
+                if (item.payMethod) payMethods.add(item.payMethod);
             });
 
-            if (selectedVal) selectEl.value = selectedVal;
+            categories.forEach(val => addOptionIfNotExist('categorySelect', 'reportCategory', val));
+            cities.forEach(val => addOptionIfNotExist('citySelect', 'reportCity', val));
+            depts.forEach(val => addOptionIfNotExist('deptSelect', 'reportDept', val));
+            payMethods.forEach(val => addOptionIfNotExist('paySelect', 'reportPayMethod', val));
+        }
+
+        function addOptionIfNotExist(selectId, reportSelectId, value) {
+            const targetSelect = document.getElementById(selectId);
+            let exists = false;
+            for (let i = 0; i < targetSelect.options.length; i++) {
+                if (targetSelect.options[i].value === value) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                const opt = document.createElement('option');
+                opt.value = value;
+                opt.innerHTML = value;
+                targetSelect.appendChild(opt);
+
+                if (reportSelectId) {
+                    const reportSelect = document.getElementById(reportSelectId);
+                    const reportOpt = document.createElement('option');
+                    reportOpt.value = value;
+                    reportOpt.innerHTML = value;
+                    reportSelect.appendChild(reportOpt);
+                }
+            }
         }
 
         function updateKPIs(data) {
             let total = 0;
-            let currentYearTotal = 0;
-            let currentMonthTotal = 0;
-
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
-
-            data.forEach(item => {
-                total += item.amount;
-                if (item.date) {
-                    const itemDate = new Date(item.date);
-                    if (itemDate.getFullYear() === currentYear) {
-                        currentYearTotal += item.amount;
-                        if (itemDate.getMonth() === currentMonth) {
-                            currentMonthTotal += item.amount;
-                        }
-                    }
-                }
-            });
-
+            data.forEach(item => total += item.amount);
             document.getElementById('totalExpense').innerText = total.toLocaleString() + ' د.ل';
-            document.getElementById('yearExpense').innerText = currentYearTotal.toLocaleString() + ' د.ل';
-            document.getElementById('monthExpense').innerText = currentMonthTotal.toLocaleString() + ' د.ل';
+            document.getElementById('yearExpense').innerText = total.toLocaleString() + ' د.ل';
+            document.getElementById('monthExpense').innerText = total.toLocaleString() + ' د.ل';
             document.getElementById('recordCount').innerText = data.length;
         }
 
@@ -456,26 +432,18 @@
             document.getElementById(id).style.display = 'none'; 
         }
 
-        function getOptionArrayKey(selectId) {
-            if (selectId === 'categorySelect') return 'categories';
-            if (selectId === 'citySelect') return 'cities';
-            if (selectId === 'deptSelect') return 'depts';
-            if (selectId === 'paySelect') return 'payMethods';
-            return null;
-        }
-
         function quickAdd(selectId, labelName) {
             const newItem = prompt(`أدخل اسم ${labelName} الجديد:`);
             if (newItem && newItem.trim() !== '') {
                 const value = newItem.trim();
-                const arrayKey = getOptionArrayKey(selectId);
+                let reportSelectId = '';
+                if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
+                if (selectId === 'citySelect') reportSelectId = 'reportCity';
+                if (selectId === 'deptSelect') reportSelectId = 'reportDept';
+                if (selectId === 'paySelect') reportSelectId = 'reportPayMethod';
 
-                if (arrayKey && !optionsStore[arrayKey].includes(value)) {
-                    optionsStore[arrayKey].push(value);
-                    saveToLocalStorage();
-                    refreshAllSelects();
-                    document.getElementById(selectId).value = value;
-                }
+                addOptionIfNotExist(selectId, reportSelectId, value);
+                document.getElementById(selectId).value = value;
             }
         }
 
@@ -491,11 +459,31 @@
             const newValue = prompt(`تعديل اسم ${labelName}:`, currentValue);
             if (newValue && newValue.trim() !== '' && newValue.trim() !== currentValue) {
                 const trimmedNewValue = newValue.trim();
-                const arrayKey = getOptionArrayKey(selectId);
 
-                if (arrayKey) {
-                    const idx = optionsStore[arrayKey].indexOf(currentValue);
-                    if (idx !== -1) optionsStore[arrayKey][idx] = trimmedNewValue;
+                for (let i = 0; i < targetSelect.options.length; i++) {
+                    if (targetSelect.options[i].value === currentValue) {
+                        targetSelect.options[i].value = trimmedNewValue;
+                        targetSelect.options[i].text = trimmedNewValue;
+                        break;
+                    }
+                }
+                targetSelect.value = trimmedNewValue;
+
+                let reportSelectId = '';
+                if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
+                if (selectId === 'citySelect') reportSelectId = 'reportCity';
+                if (selectId === 'deptSelect') reportSelectId = 'reportDept';
+                if (selectId === 'paySelect') reportSelectId = 'reportPayMethod';
+
+                if (reportSelectId) {
+                    const reportSelect = document.getElementById(reportSelectId);
+                    for (let i = 0; i < reportSelect.options.length; i++) {
+                        if (reportSelect.options[i].value === currentValue) {
+                            reportSelect.options[i].value = trimmedNewValue;
+                            reportSelect.options[i].text = trimmedNewValue;
+                            break;
+                        }
+                    }
                 }
 
                 expensesData.forEach(item => {
@@ -506,8 +494,6 @@
                 });
 
                 saveToLocalStorage();
-                refreshAllSelects();
-                targetSelect.value = trimmedNewValue;
                 renderTable(expensesData);
             }
         }
@@ -599,48 +585,107 @@
         }
 
         function exportToFormattedExcel() {
-            if (currentlyDisplayedData.length === 0) {
-                alert('لا توجد بيانات لتصديرها.');
-                return;
-            }
+            let totalSum = 0;
+            
+            let excelHTML = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="utf-8" />
+                    <!--[if gte mso 9]>
+                    <xml>
+                        <x:ExcelWorkbook>
+                            <x:ExcelWorksheets>
+                                <x:ExcelWorksheet>
+                                    <x:Name>حركات المصروفات</x:Name>
+                                    <x:WorksheetOptions>
+                                        <x:DisplayRightToLeft/>
+                                    </x:WorksheetOptions>
+                                </x:ExcelWorksheet>
+                            </x:ExcelWorksheets>
+                        </x:ExcelWorkbook>
+                    </xml>
+                    <![endif]-->
+                    <style>
+                        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+                        th { 
+                            background-color: #1e3c72; 
+                            color: #ffffff; 
+                            font-weight: bold; 
+                            border: 1px solid #102a56; 
+                            text-align: center; 
+                            padding: 6px 10px; 
+                            font-size: 9pt;
+                        }
+                        td { 
+                            border: 1px solid #dcdcdc; 
+                            text-align: center; 
+                            padding: 5px 8px; 
+                            font-size: 9pt;
+                            color: #333333;
+                        }
+                        .date-cell {
+                            mso-number-format:"Short Date";
+                            white-space: nowrap;
+                        }
+                        tr:nth-child(even) td { background-color: #f9fbfd; }
+                        .total-row td { 
+                            background-color: #e2e8f0; 
+                            font-weight: bold; 
+                            border-top: 2px solid #1e3c72; 
+                            color: #0f172a;
+                            font-size: 9pt;
+                        }
+                    </style>
+                </head>
+                <body dir="rtl">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:130px;">التاريخ</th>
+                                <th style="width:140px;">التصنيف</th>
+                                <th style="width:100px;">المدينة</th>
+                                <th style="width:160px;">القسم / مركز التكلفة</th>
+                                <th style="width:120px;">طريقة الدفع</th>
+                                <th style="width:110px;">المبلغ (د.ل)</th>
+                                <th style="width:250px;">البيان / الوصف</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
-            const exportData = currentlyDisplayedData.map(item => ({
-                'التاريخ': item.date,
-                'التصنيف': item.category,
-                'المدينة': item.city,
-                'القسم / مركز التكلفة': item.dept,
-                'طريقة الدفع': item.payMethod,
-                'المبلغ (د.ل)': item.amount,
-                'البيان / الوصف': item.desc
-            }));
-
-            const totalSum = currentlyDisplayedData.reduce((acc, curr) => acc + curr.amount, 0);
-            exportData.push({
-                'التاريخ': 'الإجمالي',
-                'التصنيف': '',
-                'المدينة': '',
-                'القسم / مركز التكلفة': '',
-                'طريقة الدفع': '',
-                'المبلغ (د.ل)': totalSum,
-                'البيان / الوصف': ''
+            currentlyDisplayedData.forEach(item => {
+                totalSum += item.amount;
+                excelHTML += `
+                    <tr>
+                        <td class="date-cell">${item.date}</td>
+                        <td>${item.category}</td>
+                        <td>${item.city}</td>
+                        <td>${item.dept}</td>
+                        <td>${item.payMethod}</td>
+                        <td style="font-weight:bold; color:#0056b3;">${item.amount.toLocaleString()}</td>
+                        <td style="text-align:right;">${item.desc}</td>
+                    </tr>`;
             });
 
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            excelHTML += `
+                        <tr class="total-row">
+                            <td colspan="5" style="text-align: left; font-weight: bold; padding-left:10px;">إجمالي حركات التقرير:</td>
+                            <td style="color: #0088ff; font-weight: bold;">${totalSum.toLocaleString()}</td>
+                            <td></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </body>
+                </html>`;
 
-            worksheet['!cols'] = [
-                { wch: 16 },
-                { wch: 20 },
-                { wch: 15 },
-                { wch: 22 },
-                { wch: 16 },
-                { wch: 16 },
-                { wch: 35 }
-            ];
-
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'تقرير المصروفات');
-
-            XLSX.writeFile(workbook, `تقارير_المصروفات_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            const blob = new Blob(['\ufeff' + excelHTML], { type: 'application/vnd.ms-excel;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `تقارير_المصروفات_${new Date().toISOString().slice(0,10)}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
