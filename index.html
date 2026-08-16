@@ -4,242 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة إدارة مصروفات الشركة</title>
-    <!-- FontAwesome Icons for UI -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS (xlsx) for Exporting Formatted Excel Files -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            background-color: #f4f7f6;
-            color: #333;
-            direction: rtl;
-        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f4f7f6; color: #333; direction: rtl; }
         
-        /* Header Bar */
         .header-bar {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            flex-wrap: wrap;
-            gap: 15px;
+            color: white; padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 15px;
         }
-        .header-title h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        .header-title p {
-            font-size: 13px;
-            opacity: 0.85;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+        .header-title h1 { font-size: 24px; margin-bottom: 5px; }
+        .header-title p { font-size: 13px; opacity: 0.85; }
+        .action-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
         .btn {
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
+            border: none; padding: 10px 18px; border-radius: 8px;
+            font-size: 14px; font-weight: bold; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease;
         }
         .btn-add { background-color: #0088ff; color: white; }
         .btn-add:hover { background-color: #0066cc; }
-        
         .btn-excel { background-color: #28a745; color: white; }
         .btn-excel:hover { background-color: #218838; }
-        
         .btn-reports { background-color: #17a2b8; color: white; }
         .btn-reports:hover { background-color: #138496; }
 
-        /* KPI Cards */
         .kpi-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            padding: 25px 40px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px; padding: 25px 40px;
         }
         .kpi-card {
-            background: white;
-            padding: 18px 22px;
-            border-radius: 12px;
+            background: white; padding: 18px 22px; border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             border-right: 5px solid #0088ff;
         }
         .kpi-card.yellow { border-right-color: #ffc107; }
         .kpi-card.green { border-right-color: #28a745; }
         .kpi-card.teal { border-right-color: #17a2b8; }
-        
-        .kpi-info span {
-            font-size: 13px;
-            color: #666;
-            display: block;
-            margin-bottom: 5px;
-        }
-        .kpi-info h2 {
-            font-size: 22px;
-            color: #1a2530;
-        }
+        .kpi-info span { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
+        .kpi-info h2 { font-size: 22px; color: #1a2530; }
 
-        /* Table Container */
         .content-container { padding: 0 40px 40px 40px; }
         .table-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            overflow-x: auto;
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto;
         }
         .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-            gap: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
         }
         .search-box input {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            width: 250px;
-            outline: none;
+            padding: 8px 15px; border: 1px solid #ddd; border-radius: 6px; width: 250px; outline: none;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: right;
-        }
-        th, td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
-        }
-        th {
-            background-color: #f8fafc;
-            color: #475569;
-            font-weight: 600;
-        }
-        tfoot tr {
-            background-color: #f1f5f9;
-            font-weight: bold;
-        }
-        tfoot td {
-            border-top: 2px solid #cbd5e1;
-            color: #0f172a;
-            font-size: 15px;
-        }
-        .badge-cat {
-            background: #e2e8f0;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            color: #334155;
-            display: inline-block;
-        }
-        .badge-city {
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            display: inline-block;
-        }
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background-color: #f8fafc; color: #475569; font-weight: 600; }
+        tfoot tr { background-color: #f1f5f9; font-weight: bold; }
+        tfoot td { border-top: 2px solid #cbd5e1; color: #0f172a; font-size: 15px; }
+        .badge-cat { background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #334155; display: inline-block; }
+        .badge-city { background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
 
-        /* Modals */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;
         }
         .modal-content {
-            background: white;
-            width: 90%;
-            max-width: 520px;
-            max-height: 85vh;
-            overflow-y: auto;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            position: relative;
+            background: white; width: 90%; max-width: 520px; max-height: 85vh;
+            overflow-y: auto; border-radius: 12px; padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2); position: relative;
         }
         .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 20px;
         }
         .modal-header h3 { font-size: 18px; color: #1e3c72; }
         .close-btn { cursor: pointer; font-size: 22px; color: #aaa; }
         .close-btn:hover { color: #333; }
 
         .form-group { margin-bottom: 15px; }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #444;
-            margin-bottom: 6px;
-        }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
         .input-group { display: flex; gap: 8px; }
         select, input, textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            background-color: #f8fafc;
+            width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-size: 14px; outline: none; background-color: #f8fafc;
         }
-        select:focus, input:focus, textarea:focus {
-            border-color: #007bff;
-            background-color: #fff;
-        }
+        select:focus, input:focus, textarea:focus { border-color: #007bff; background-color: #fff; }
         .btn-plus {
-            background-color: #e2e8f0;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            width: 42px;
-            height: 42px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+            background-color: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;
+            border-radius: 8px; width: 42px; height: 42px; font-size: 18px;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
         }
-        .btn-plus:hover {
-            background-color: #007bff;
-            color: white;
-            border-color: #007bff;
-        }
+        .btn-plus:hover { background-color: #007bff; color: white; border-color: #007bff; }
         .form-row { display: flex; gap: 15px; }
 
         @media (max-width: 768px) {
@@ -250,7 +109,6 @@
 </head>
 <body>
 
-    <!-- Header Bar -->
     <div class="header-bar">
         <div class="header-title">
             <h1>منظومة إدارة مصروفات الشركة</h1>
@@ -260,7 +118,7 @@
             <button class="btn btn-add" onclick="openModal('addExpenseModal')">
                 <i class="fa-solid fa-plus"></i> إضافة مصروف جديد
             </button>
-            <button class="btn btn-excel" onclick="exportToExcel()">
+            <button class="btn btn-excel" onclick="exportToFormattedExcel()">
                 <i class="fa-solid fa-file-excel"></i> تصدير إكسل
             </button>
             <button class="btn btn-reports" onclick="openModal('reportsModal')">
@@ -269,7 +127,6 @@
         </div>
     </div>
 
-    <!-- Dynamic KPI Cards -->
     <div class="kpi-container">
         <div class="kpi-card teal">
             <div class="kpi-info">
@@ -297,7 +154,6 @@
         </div>
     </div>
 
-    <!-- Expense Table -->
     <div class="content-container">
         <div class="table-card">
             <div class="table-header">
@@ -319,9 +175,7 @@
                         <th>إجراءات</th>
                     </tr>
                 </thead>
-                <tbody id="expenseTableBody">
-                    <!-- Dynamic Data -->
-                </tbody>
+                <tbody id="expenseTableBody"></tbody>
                 <tfoot>
                     <tr>
                         <td colspan="5" style="text-align: left; font-weight: bold;">إجمالي حركات الجدول المعروضة:</td>
@@ -333,7 +187,6 @@
         </div>
     </div>
 
-    <!-- Modal 1: Add Expense -->
     <div class="modal" id="addExpenseModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -345,7 +198,6 @@
                     <label>التاريخ</label>
                     <input type="date" id="expDate" required>
                 </div>
-
                 <div class="form-group">
                     <label>التصنيف</label>
                     <div class="input-group">
@@ -355,13 +207,10 @@
                             <option value="كهرباء/مياه/إنترنت">كهرباء/مياه/إنترنت</option>
                             <option value="صيانة وتشغيل">صيانة وتشغيل</option>
                             <option value="مستلزمات مكتبية">مستلزمات مكتبية</option>
-                            <option value="قرطاسية">قرطاسية</option>
-                            <option value="الدعاية">الدعاية</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')" title="إضافة تصنيف">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')">+</button>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>المدينة</label>
                     <div class="input-group">
@@ -369,28 +218,21 @@
                             <option value="طرابلس">طرابلس</option>
                             <option value="بنغازي">بنغازي</option>
                             <option value="مصراتة">مصراتة</option>
-                            <option value="الزاوية">الزاوية</option>
-                            <option value="سبها">سبها</option>
-                            <option value="البيضاء">البيضاء</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('citySelect', 'المدينة')" title="إضافة مدينة">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('citySelect', 'المدينة')">+</button>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>القسم / مركز التكلفة</label>
                     <div class="input-group">
                         <select id="deptSelect">
                             <option value="الإدارة العامة">الإدارة العامة</option>
                             <option value="قسم المبيعات">قسم المبيعات</option>
-                            <option value="قسم المخازن">قسم المخازن</option>
                             <option value="التشغيل والصيانة">التشغيل والصيانة</option>
-                            <option value="الدعاية">الدعاية</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('deptSelect', 'القسم')" title="إضافة قسم">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('deptSelect', 'القسم')">+</button>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>طريقة الدفع</label>
                     <div class="input-group">
@@ -398,86 +240,46 @@
                             <option value="نقداً">نقداً</option>
                             <option value="تحويل بنكي">تحويل بنكي</option>
                             <option value="صك مصرفي">صك مصرفي</option>
-                            <option value="بطاقة إلكترونية">بطاقة إلكترونية</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('paySelect', 'طريقة الدفع')" title="إضافة طريقة دفع">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('paySelect', 'طريقة الدفع')">+</button>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label>المبلغ (د.ل)</label>
                     <input type="number" id="expAmount" step="0.01" placeholder="0.00" required>
                 </div>
-
                 <div class="form-group">
                     <label>البيان / الوصف</label>
-                    <textarea id="expDesc" rows="2" placeholder="اكتب تفاصيل الفاتورة أو المصروف..."></textarea>
+                    <textarea id="expDesc" rows="2" placeholder="اكتب تفاصيل الفاتورة..."></textarea>
                 </div>
-
                 <button type="submit" class="btn btn-add" style="width: 100%; justify-content: center;">حفظ المصروف</button>
             </form>
         </div>
     </div>
 
-    <!-- Modal 2: Reports -->
     <div class="modal" id="reportsModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📑 تقارير المصروفات حسب المدينة والتاريخ</h3>
+                <h3>📑 تقارير المصروفات</h3>
                 <span class="close-btn" onclick="closeModal('reportsModal')">&times;</span>
             </div>
             <form onsubmit="generateReport(event)">
                 <div class="form-row">
                     <div class="form-group" style="flex:1;">
-                        <label>تصفية حسب المدينة:</label>
+                        <label>المدينة:</label>
                         <select id="reportCity">
                             <option value="الكل">جميع المدن</option>
                             <option value="طرابلس">طرابلس</option>
                             <option value="بنغازي">بنغازي</option>
                             <option value="مصراتة">مصراتة</option>
-                            <option value="الزاوية">الزاوية</option>
-                            <option value="سبها">سبها</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>التصنيف:</label>
-                        <select id="reportCategory">
-                            <option value="الكل">جميع التصنيفات</option>
-                            <option value="إيجارات">إيجارات</option>
-                            <option value="مرتبات">مرتبات</option>
-                            <option value="كهرباء/مياه/إنترنت">كهرباء/مياه/إنترنت</option>
-                            <option value="صيانة وتشغيل">صيانة وتشغيل</option>
-                            <option value="مستلزمات مكتبية">مستلزمات مكتبية</option>
-                            <option value="قرطاسية">قرطاسية</option>
-                            <option value="الدعاية">الدعاية</option>
                         </select>
                     </div>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group" style="flex:1;">
-                        <label>من تاريخ:</label>
-                        <input type="date" id="fromDate">
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>إلى تاريخ:</label>
-                        <input type="date" id="toDate">
-                    </div>
-                </div>
-
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button type="submit" class="btn btn-reports" style="flex:1; justify-content:center;">
-                        🔍 عرض التقرير المفلتر
-                    </button>
-                    <button type="button" class="btn btn-excel" onclick="resetReportFilter()" style="flex:1; justify-content:center; background-color:#6c757d;">
-                        🔄 إعادة عرض الكل
-                    </button>
-                </div>
+                <button type="submit" class="btn btn-reports" style="width:100%; justify-content:center;">عرض التقرير</button>
             </form>
         </div>
     </div>
 
-    <!-- JavaScript Logic -->
     <script>
         let expensesData = [
             { id: 1, date: '2026-08-15', category: 'إيجارات', city: 'طرابلس', dept: 'الإدارة العامة', payMethod: 'تحويل بنكي', amount: 1200, desc: 'إيجار مقر الشركة - شهر أغسطس' },
@@ -493,39 +295,19 @@
             updateKPIs();
         });
 
-        // Update KPIs dynamically
         function updateKPIs() {
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
-
             let total = 0;
-            let yearTotal = 0;
-            let monthTotal = 0;
-
-            expensesData.forEach(item => {
-                total += item.amount;
-                const d = new Date(item.date);
-                if (d.getFullYear() === currentYear) {
-                    yearTotal += item.amount;
-                    if (d.getMonth() === currentMonth) {
-                        monthTotal += item.amount;
-                    }
-                }
-            });
-
+            expensesData.forEach(item => total += item.amount);
             document.getElementById('totalExpense').innerText = total.toLocaleString() + ' د.ل';
-            document.getElementById('yearExpense').innerText = yearTotal.toLocaleString() + ' د.ل';
-            document.getElementById('monthExpense').innerText = monthTotal.toLocaleString() + ' د.ل';
+            document.getElementById('yearExpense').innerText = total.toLocaleString() + ' د.ل';
+            document.getElementById('monthExpense').innerText = total.toLocaleString() + ' د.ل';
             document.getElementById('recordCount').innerText = expensesData.length;
         }
 
-        // Render Table Data & Calculate Footer Total
         function renderTable(data) {
             currentlyDisplayedData = data;
             const tbody = document.getElementById('expenseTableBody');
             tbody.innerHTML = '';
-
             let currentTableSum = 0;
 
             data.forEach(item => {
@@ -539,9 +321,7 @@
                     <td>${item.payMethod}</td>
                     <td><strong>${item.amount.toLocaleString()} د.ل</strong></td>
                     <td>${item.desc}</td>
-                    <td>
-                        <button style="border:none; background:none; cursor:pointer;" onclick="deleteExpense(${item.id})">🗑️</button>
-                    </td>
+                    <td><button style="border:none; background:none; cursor:pointer;" onclick="deleteExpense(${item.id})">🗑️</button></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -549,31 +329,16 @@
             document.getElementById('tableTotalSum').innerText = currentTableSum.toLocaleString() + ' د.ل';
         }
 
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         function quickAdd(selectId, labelName) {
             const newItem = prompt(`أدخل اسم ${labelName} الجديد:`);
             if (newItem && newItem.trim() !== '') {
                 const select = document.getElementById(selectId);
                 const opt = document.createElement('option');
-                opt.value = newItem.trim();
-                opt.innerHTML = newItem.trim();
-                opt.selected = true;
-                select.appendChild(opt);
-
-                if (selectId === 'categorySelect') {
-                    const reportSelect = document.getElementById('reportCategory');
-                    const repOpt = document.createElement('option');
-                    repOpt.value = newItem.trim();
-                    repOpt.innerHTML = newItem.trim();
-                    reportSelect.appendChild(repOpt);
-                }
+                opt.value = newItem.trim(); opt.innerHTML = newItem.trim();
+                opt.selected = true; select.appendChild(opt);
             }
         }
 
@@ -589,45 +354,18 @@
                 amount: parseFloat(document.getElementById('expAmount').value),
                 desc: document.getElementById('expDesc').value
             };
-
             expensesData.unshift(newExpense);
             renderTable(expensesData);
             updateKPIs();
             closeModal('addExpenseModal');
-            document.getElementById('expenseForm').reset();
-            document.getElementById('expDate').valueAsDate = new Date();
         }
 
         function deleteExpense(id) {
-            if (confirm('هل أنت تأكد من حذف هذا المصروف؟')) {
+            if (confirm('هل أنت تأكد من الحذف؟')) {
                 expensesData = expensesData.filter(item => item.id !== id);
                 renderTable(expensesData);
                 updateKPIs();
             }
-        }
-
-        function generateReport(e) {
-            e.preventDefault();
-            const city = document.getElementById('reportCity').value;
-            const category = document.getElementById('reportCategory').value;
-            const from = document.getElementById('fromDate').value;
-            const to = document.getElementById('toDate').value;
-
-            const filtered = expensesData.filter(item => {
-                const matchCity = (city === 'الكل' || item.city === city);
-                const matchCategory = (category === 'الكل' || item.category === category);
-                const matchFrom = !from || item.date >= from;
-                const matchTo = !to || item.date <= to;
-                return matchCity && matchCategory && matchFrom && matchTo;
-            });
-
-            renderTable(filtered);
-            closeModal('reportsModal');
-        }
-
-        function resetReportFilter() {
-            renderTable(expensesData);
-            closeModal('reportsModal');
         }
 
         function searchTable() {
@@ -635,56 +373,110 @@
             const filtered = expensesData.filter(item => 
                 item.desc.toLowerCase().includes(query) || 
                 item.category.toLowerCase().includes(query) ||
-                item.city.toLowerCase().includes(query) ||
-                item.dept.toLowerCase().includes(query)
+                item.city.toLowerCase().includes(query)
             );
             renderTable(filtered);
         }
 
-        // Export Directly Formatted Excel File (.xlsx)
-        function exportToExcel() {
-            let exportRows = [];
-
-            // 1. Headers identical to the UI table
-            exportRows.push(["التاريخ", "التصنيف", "المدينة", "القسم / مركز التكلفة", "طريقة الدفع", "المبلغ", "البيان / الوصف"]);
-
-            // 2. Data Rows
+        // دالة التصدير المعدلة: جدول منسق وباتجاه من اليمين إلى اليسار (RTL)
+        function exportToFormattedExcel() {
             let totalSum = 0;
+            
+            let excelHTML = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="utf-8" />
+                    <!--[if gte mso 9]>
+                    <xml>
+                        <x:ExcelWorkbook>
+                            <x:ExcelWorksheets>
+                                <x:ExcelWorksheet>
+                                    <x:Name>حركات المصروفات</x:Name>
+                                    <x:WorksheetOptions>
+                                        <x:DisplayRightToLeft/>
+                                    </x:WorksheetOptions>
+                                </x:ExcelWorksheet>
+                            </x:ExcelWorksheets>
+                        </x:ExcelWorkbook>
+                    </xml>
+                    <![endif]-->
+                    <style>
+                        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+                        th { 
+                            background-color: #1e3c72; 
+                            color: #ffffff; 
+                            font-weight: bold; 
+                            border: 1px solid #102a56; 
+                            text-align: center; 
+                            padding: 10px 15px; 
+                            font-size: 14px;
+                        }
+                        td { 
+                            border: 1px solid #dcdcdc; 
+                            text-align: center; 
+                            padding: 8px 12px; 
+                            font-size: 13px;
+                            color: #333333;
+                        }
+                        tr:nth-child(even) td { background-color: #f9fbfd; }
+                        .total-row td { 
+                            background-color: #e2e8f0; 
+                            font-weight: bold; 
+                            border-top: 2px solid #1e3c72; 
+                            color: #0f172a;
+                            font-size: 14px;
+                        }
+                    </style>
+                </head>
+                <body dir="rtl">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:120px;">التاريخ</th>
+                                <th style="width:160px;">التصنيف</th>
+                                <th style="width:120px;">المدينة</th>
+                                <th style="width:180px;">القسم / مركز التكلفة</th>
+                                <th style="width:140px;">طريقة الدفع</th>
+                                <th style="width:130px;">المبلغ (د.ل)</th>
+                                <th style="width:280px;">البيان / الوصف</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
             currentlyDisplayedData.forEach(item => {
                 totalSum += item.amount;
-                exportRows.push([
-                    item.date,
-                    item.category,
-                    item.city,
-                    item.dept,
-                    item.payMethod,
-                    item.amount,
-                    item.desc
-                ]);
+                excelHTML += `
+                    <tr>
+                        <td>${item.date}</td>
+                        <td>${item.category}</td>
+                        <td>${item.city}</td>
+                        <td>${item.dept}</td>
+                        <td>${item.payMethod}</td>
+                        <td style="font-weight:bold; color:#0056b3;">${item.amount.toLocaleString()}</td>
+                        <td style="text-align:right;">${item.desc}</td>
+                    </tr>`;
             });
 
-            // 3. Footer Total Row
-            exportRows.push(["إجمالي حركات الجدول المعروضة:", "", "", "", "", totalSum, ""]);
+            excelHTML += `
+                        <tr class="total-row">
+                            <td colspan="5" style="text-align: left; font-weight: bold; padding-left:15px;">إجمالي حركات الجدول المعروضة:</td>
+                            <td style="color: #0088ff; font-weight: bold;">${totalSum.toLocaleString()}</td>
+                            <td></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </body>
+                </html>`;
 
-            // Create Worksheet
-            const worksheet = XLSX.utils.aoa_to_sheet(exportRows);
-
-            // Auto Column Widths
-            worksheet['!cols'] = [
-                { wch: 15 }, // التاريخ
-                { wch: 20 }, // التصنيف
-                { wch: 15 }, // المدينة
-                { wch: 22 }, // القسم / مركز التكلفة
-                { wch: 18 }, // طريقة الدفع
-                { wch: 15 }, // المبلغ
-                { wch: 35 }  // البيان / الوصف
-            ];
-
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "حركات المصروفات");
-
-            // Download File
-            XLSX.writeFile(workbook, `حركات_المصروفات_${new Date().toISOString().slice(0,10)}.xlsx`);
+            const blob = new Blob(['\ufeff' + excelHTML], { type: 'application/vnd.ms-excel;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `حركات_المصروفات_${new Date().toISOString().slice(0,10)}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
