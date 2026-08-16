@@ -318,9 +318,66 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('expDate').valueAsDate = new Date();
+            
+            // استرجاع البيانات المحفوظة إن وجدت
+            const savedData = localStorage.getItem('arkan_expenses');
+            if (savedData) {
+                expensesData = JSON.parse(savedData);
+                populateDynamicSelects();
+            }
+
             renderTable(expensesData);
             updateKPIs(expensesData);
         });
+
+        function saveToLocalStorage() {
+            localStorage.setItem('arkan_expenses', JSON.stringify(expensesData));
+        }
+
+        // إغناء القوائم المنسدلة بالقيم المضافة سابقاً تلقائياً عند فتح المنظومة
+        function populateDynamicSelects() {
+            const categories = new Set();
+            const cities = new Set();
+            const depts = new Set();
+            const payMethods = new Set();
+
+            expensesData.forEach(item => {
+                if (item.category) categories.add(item.category);
+                if (item.city) cities.add(item.city);
+                if (item.dept) depts.add(item.dept);
+                if (item.payMethod) payMethods.add(item.payMethod);
+            });
+
+            categories.forEach(val => addOptionIfNotExist('categorySelect', 'reportCategory', val));
+            cities.forEach(val => addOptionIfNotExist('citySelect', 'reportCity', val));
+            depts.forEach(val => addOptionIfNotExist('deptSelect', 'reportDept', val));
+            payMethods.forEach(val => addOptionIfNotExist('paySelect', 'reportPayMethod', val));
+        }
+
+        function addOptionIfNotExist(selectId, reportSelectId, value) {
+            const targetSelect = document.getElementById(selectId);
+            let exists = false;
+            for (let i = 0; i < targetSelect.options.length; i++) {
+                if (targetSelect.options[i].value === value) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                const opt = document.createElement('option');
+                opt.value = value;
+                opt.innerHTML = value;
+                targetSelect.appendChild(opt);
+
+                if (reportSelectId) {
+                    const reportSelect = document.getElementById(reportSelectId);
+                    const reportOpt = document.createElement('option');
+                    reportOpt.value = value;
+                    reportOpt.innerHTML = value;
+                    reportSelect.appendChild(reportOpt);
+                }
+            }
+        }
 
         function updateKPIs(data) {
             let total = 0;
@@ -376,38 +433,14 @@
             const newItem = prompt(`أدخل اسم ${labelName} الجديد:`);
             if (newItem && newItem.trim() !== '') {
                 const value = newItem.trim();
-                const targetSelect = document.getElementById(selectId);
+                let reportSelectId = '';
+                if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
+                if (selectId === 'citySelect') reportSelectId = 'reportCity';
+                if (selectId === 'deptSelect') reportSelectId = 'reportDept';
+                if (selectId === 'paySelect') reportSelectId = 'reportPayMethod';
 
-                let exists = false;
-                for (let i = 0; i < targetSelect.options.length; i++) {
-                    if (targetSelect.options[i].value === value) {
-                        exists = true;
-                        break;
-                    }
-                }
-
-                if (!exists) {
-                    const opt = document.createElement('option');
-                    opt.value = value;
-                    opt.innerHTML = value;
-                    targetSelect.appendChild(opt);
-
-                    let reportSelectId = '';
-                    if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
-                    if (selectId === 'citySelect') reportSelectId = 'reportCity';
-                    if (selectId === 'deptSelect') reportSelectId = 'reportDept';
-                    if (selectId === 'paySelect') reportSelectId = 'reportPayMethod';
-
-                    if (reportSelectId) {
-                        const reportSelect = document.getElementById(reportSelectId);
-                        const reportOpt = document.createElement('option');
-                        reportOpt.value = value;
-                        reportOpt.innerHTML = value;
-                        reportSelect.appendChild(reportOpt);
-                    }
-                }
-
-                targetSelect.value = value;
+                addOptionIfNotExist(selectId, reportSelectId, value);
+                document.getElementById(selectId).value = value;
             }
         }
 
@@ -424,6 +457,10 @@
                 desc: document.getElementById('expDesc').value
             };
             expensesData.unshift(newExpense);
+            
+            // حفظ التغييرات في LocalStorage
+            saveToLocalStorage();
+
             resetFilter();
             document.getElementById('expenseForm').reset();
             document.getElementById('expDate').valueAsDate = new Date();
@@ -433,6 +470,10 @@
         function deleteExpense(id) {
             if (confirm('هل أنت تأكد من الحذف؟')) {
                 expensesData = expensesData.filter(item => item.id !== id);
+                
+                // حفظ التغييرات بعد الحذف في LocalStorage
+                saveToLocalStorage();
+
                 renderTable(expensesData);
                 updateKPIs(expensesData);
             }
