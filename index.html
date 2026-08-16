@@ -96,6 +96,13 @@
             width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1;
             border-radius: 8px; font-size: 14px; outline: none; background-color: #f8fafc;
         }
+        
+        /* إصلاح اتجاه حقول التاريخ لمنع ظهور النص المقلوب */
+        input[type="date"] {
+            direction: ltr;
+            text-align: right;
+        }
+
         select:focus, input:focus, textarea:focus { border-color: #007bff; background-color: #fff; }
         .btn-plus, .btn-edit-opt {
             background-color: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;
@@ -333,7 +340,6 @@
             const todayStr = new Date().toISOString().split('T')[0];
             const expDateInput = document.getElementById('expDate');
             
-            // ضبط القيمة الافتراضية والحد الأقصى للتاريخ على تاريخ اليوم الحقيقي
             expDateInput.value = todayStr;
             expDateInput.max = todayStr;
             
