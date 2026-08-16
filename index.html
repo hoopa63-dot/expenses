@@ -215,7 +215,7 @@
                         <select id="categorySelect" required>
                             <option value="" disabled selected>اختر أو أضف تصنيف...</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')" title="إضافة">+ </button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')" title="إضافة">+</button>
                         <button type="button" class="btn-edit-opt" onclick="quickEdit('categorySelect', 'التصنيف')" title="تعديل"><i class="fa-solid fa-pen"></i></button>
                     </div>
                 </div>
@@ -460,7 +460,6 @@
             if (newValue && newValue.trim() !== '' && newValue.trim() !== currentValue) {
                 const trimmedNewValue = newValue.trim();
 
-                // تحديث خيار القائمة
                 for (let i = 0; i < targetSelect.options.length; i++) {
                     if (targetSelect.options[i].value === currentValue) {
                         targetSelect.options[i].value = trimmedNewValue;
@@ -470,7 +469,6 @@
                 }
                 targetSelect.value = trimmedNewValue;
 
-                // تحديث قائمة التقارير
                 let reportSelectId = '';
                 if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
                 if (selectId === 'citySelect') reportSelectId = 'reportCity';
@@ -488,7 +486,6 @@
                     }
                 }
 
-                // تحديث البيانات المحفوظة سابقاً
                 expensesData.forEach(item => {
                     if (selectId === 'categorySelect' && item.category === currentValue) item.category = trimmedNewValue;
                     if (selectId === 'citySelect' && item.city === currentValue) item.city = trimmedNewValue;
@@ -626,6 +623,10 @@
                             font-size: 9pt;
                             color: #333333;
                         }
+                        .date-cell {
+                            mso-number-format:"Short Date";
+                            white-space: nowrap;
+                        }
                         tr:nth-child(even) td { background-color: #f9fbfd; }
                         .total-row td { 
                             background-color: #e2e8f0; 
@@ -640,7 +641,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th style="width:100px;">التاريخ</th>
+                                <th style="width:130px;">التاريخ</th>
                                 <th style="width:140px;">التصنيف</th>
                                 <th style="width:100px;">المدينة</th>
                                 <th style="width:160px;">القسم / مركز التكلفة</th>
@@ -655,7 +656,7 @@
                 totalSum += item.amount;
                 excelHTML += `
                     <tr>
-                        <td>${item.date}</td>
+                        <td class="date-cell">${item.date}</td>
                         <td>${item.category}</td>
                         <td>${item.city}</td>
                         <td>${item.dept}</td>
