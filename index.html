@@ -95,13 +95,14 @@
             border-radius: 8px; font-size: 14px; outline: none; background-color: #f8fafc;
         }
         select:focus, input:focus, textarea:focus { border-color: #007bff; background-color: #fff; }
-        .btn-plus {
+        .btn-plus, .btn-edit-opt {
             background-color: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;
-            border-radius: 8px; width: 42px; height: 42px; font-size: 18px;
+            border-radius: 8px; width: 42px; height: 42px; font-size: 15px;
             font-weight: bold; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; flex-shrink: 0;
+            justify-content: center; flex-shrink: 0; transition: all 0.2s ease;
         }
         .btn-plus:hover { background-color: #007bff; color: white; border-color: #007bff; }
+        .btn-edit-opt:hover { background-color: #ffc107; color: #000; border-color: #ffc107; }
         .form-row { display: flex; gap: 15px; }
 
         @media (max-width: 768px) {
@@ -214,7 +215,8 @@
                         <select id="categorySelect" required>
                             <option value="" disabled selected>اختر أو أضف تصنيف...</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')" title="إضافة">+ </button>
+                        <button type="button" class="btn-edit-opt" onclick="quickEdit('categorySelect', 'التصنيف')" title="تعديل"><i class="fa-solid fa-pen"></i></button>
                     </div>
                 </div>
                 <div class="form-group">
@@ -223,7 +225,8 @@
                         <select id="citySelect" required>
                             <option value="" disabled selected>اختر أو أضف مدينة...</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('citySelect', 'المدينة')">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('citySelect', 'المدينة')" title="إضافة">+</button>
+                        <button type="button" class="btn-edit-opt" onclick="quickEdit('citySelect', 'المدينة')" title="تعديل"><i class="fa-solid fa-pen"></i></button>
                     </div>
                 </div>
                 <div class="form-group">
@@ -232,7 +235,8 @@
                         <select id="deptSelect" required>
                             <option value="" disabled selected>اختر أو أضف قسم...</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('deptSelect', 'القسم')">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('deptSelect', 'القسم')" title="إضافة">+</button>
+                        <button type="button" class="btn-edit-opt" onclick="quickEdit('deptSelect', 'القسم')" title="تعديل"><i class="fa-solid fa-pen"></i></button>
                     </div>
                 </div>
                 <div class="form-group">
@@ -241,7 +245,8 @@
                         <select id="paySelect" required>
                             <option value="" disabled selected>اختر أو أضف طريقة دفع...</option>
                         </select>
-                        <button type="button" class="btn-plus" onclick="quickAdd('paySelect', 'طريقة الدفع')">+</button>
+                        <button type="button" class="btn-plus" onclick="quickAdd('paySelect', 'طريقة الدفع')" title="إضافة">+</button>
+                        <button type="button" class="btn-edit-opt" onclick="quickEdit('paySelect', 'طريقة الدفع')" title="تعديل"><i class="fa-solid fa-pen"></i></button>
                     </div>
                 </div>
                 <div class="form-group">
@@ -319,7 +324,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('expDate').valueAsDate = new Date();
             
-            // استرجاع البيانات المحفوظة إن وجدت
             const savedData = localStorage.getItem('arkan_expenses');
             if (savedData) {
                 expensesData = JSON.parse(savedData);
@@ -334,7 +338,6 @@
             localStorage.setItem('arkan_expenses', JSON.stringify(expensesData));
         }
 
-        // إغناء القوائم المنسدلة بالقيم المضافة سابقاً تلقائياً عند فتح المنظومة
         function populateDynamicSelects() {
             const categories = new Set();
             const cities = new Set();
@@ -444,6 +447,60 @@
             }
         }
 
+        function quickEdit(selectId, labelName) {
+            const targetSelect = document.getElementById(selectId);
+            const currentValue = targetSelect.value;
+
+            if (!currentValue) {
+                alert(`يرجى اختيار ${labelName} لتعديله أولاً.`);
+                return;
+            }
+
+            const newValue = prompt(`تعديل اسم ${labelName}:`, currentValue);
+            if (newValue && newValue.trim() !== '' && newValue.trim() !== currentValue) {
+                const trimmedNewValue = newValue.trim();
+
+                // تحديث خيار القائمة
+                for (let i = 0; i < targetSelect.options.length; i++) {
+                    if (targetSelect.options[i].value === currentValue) {
+                        targetSelect.options[i].value = trimmedNewValue;
+                        targetSelect.options[i].text = trimmedNewValue;
+                        break;
+                    }
+                }
+                targetSelect.value = trimmedNewValue;
+
+                // تحديث قائمة التقارير
+                let reportSelectId = '';
+                if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
+                if (selectId === 'citySelect') reportSelectId = 'reportCity';
+                if (selectId === 'deptSelect') reportSelectId = 'reportDept';
+                if (selectId === 'paySelect') reportSelectId = 'reportPayMethod';
+
+                if (reportSelectId) {
+                    const reportSelect = document.getElementById(reportSelectId);
+                    for (let i = 0; i < reportSelect.options.length; i++) {
+                        if (reportSelect.options[i].value === currentValue) {
+                            reportSelect.options[i].value = trimmedNewValue;
+                            reportSelect.options[i].text = trimmedNewValue;
+                            break;
+                        }
+                    }
+                }
+
+                // تحديث البيانات المحفوظة سابقاً
+                expensesData.forEach(item => {
+                    if (selectId === 'categorySelect' && item.category === currentValue) item.category = trimmedNewValue;
+                    if (selectId === 'citySelect' && item.city === currentValue) item.city = trimmedNewValue;
+                    if (selectId === 'deptSelect' && item.dept === currentValue) item.dept = trimmedNewValue;
+                    if (selectId === 'paySelect' && item.payMethod === currentValue) item.payMethod = trimmedNewValue;
+                });
+
+                saveToLocalStorage();
+                renderTable(expensesData);
+            }
+        }
+
         function saveExpense(e) {
             e.preventDefault();
             const newExpense = {
@@ -458,9 +515,7 @@
             };
             expensesData.unshift(newExpense);
             
-            // حفظ التغييرات في LocalStorage
             saveToLocalStorage();
-
             resetFilter();
             document.getElementById('expenseForm').reset();
             document.getElementById('expDate').valueAsDate = new Date();
@@ -470,10 +525,7 @@
         function deleteExpense(id) {
             if (confirm('هل أنت تأكد من الحذف؟')) {
                 expensesData = expensesData.filter(item => item.id !== id);
-                
-                // حفظ التغييرات بعد الحذف في LocalStorage
                 saveToLocalStorage();
-
                 renderTable(expensesData);
                 updateKPIs(expensesData);
             }
