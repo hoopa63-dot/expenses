@@ -29,6 +29,8 @@
         .btn-excel:hover { background-color: #218838; }
         .btn-reports { background-color: #17a2b8; color: white; }
         .btn-reports:hover { background-color: #138496; }
+        .btn-reset { background-color: #6c757d; color: white; }
+        .btn-reset:hover { background-color: #5a6268; }
 
         .kpi-container {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -55,6 +57,7 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
         }
+        .filter-status { font-size: 13px; color: #17a2b8; font-weight: bold; background: #e0f7fa; padding: 5px 12px; border-radius: 6px; display: none; }
         .search-box input {
             padding: 8px 15px; border: 1px solid #ddd; border-radius: 6px; width: 250px; outline: none;
         }
@@ -72,7 +75,7 @@
             background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;
         }
         .modal-content {
-            background: white; width: 90%; max-width: 520px; max-height: 85vh;
+            background: white; width: 90%; max-width: 550px; max-height: 90vh;
             overflow-y: auto; border-radius: 12px; padding: 25px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2); position: relative;
         }
@@ -124,13 +127,16 @@
             <button class="btn btn-reports" onclick="openModal('reportsModal')">
                 <i class="fa-solid fa-chart-line"></i> تقارير المصروفات
             </button>
+            <button class="btn btn-reset" id="resetFilterBtn" style="display:none;" onclick="resetFilter()">
+                <i class="fa-solid fa-rotate-left"></i> عرض الكل
+            </button>
         </div>
     </div>
 
     <div class="kpi-container">
         <div class="kpi-card teal">
             <div class="kpi-info">
-                <span>المصروف الكلي</span>
+                <span>إجمالي التقرير / المصروف الكلي</span>
                 <h2 id="totalExpense">0.00 د.ل</h2>
             </div>
         </div>
@@ -157,9 +163,12 @@
     <div class="content-container">
         <div class="table-card">
             <div class="table-header">
-                <h3>حركات المصروفات</h3>
+                <div>
+                    <h3 style="display:inline-block; margin-left:10px;">حركات المصروفات</h3>
+                    <span id="filterBadge" class="filter-status"><i class="fa-solid fa-filter"></i> نتائج تصفية التقرير</span>
+                </div>
                 <div class="search-box">
-                    <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="بحث في البيان أو التصنيف...">
+                    <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="بحث سريع...">
                 </div>
             </div>
             <table>
@@ -187,6 +196,7 @@
         </div>
     </div>
 
+    <!-- نافذة إضافة مصروف -->
     <div class="modal" id="addExpenseModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -257,25 +267,71 @@
         </div>
     </div>
 
+    <!-- نافذة تقارير المصروفات الموسعة -->
     <div class="modal" id="reportsModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📑 تقارير المصروفات</h3>
+                <h3>📊 تقارير المصروفات المتقدمة</h3>
                 <span class="close-btn" onclick="closeModal('reportsModal')">&times;</span>
             </div>
             <form onsubmit="generateReport(event)">
                 <div class="form-row">
                     <div class="form-group" style="flex:1;">
-                        <label>المدينة:</label>
-                        <select id="reportCity">
-                            <option value="الكل">جميع المدن</option>
-                            <option value="طرابلس">طرابلس</option>
-                            <option value="بنغازي">بنغازي</option>
-                            <option value="مصراتة">مصراتة</option>
-                        </select>
+                        <label>من تاريخ:</label>
+                        <input type="date" id="reportFromDate">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>إلى تاريخ:</label>
+                        <input type="date" id="reportToDate">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-reports" style="width:100%; justify-content:center;">عرض التقرير</button>
+
+                <div class="form-group">
+                    <label>التصنيف:</label>
+                    <select id="reportCategory">
+                        <option value="الكل">جميع التصنيفات</option>
+                        <option value="إيجارات">إيجارات</option>
+                        <option value="مرتبات">مرتبات</option>
+                        <option value="كهرباء/مياه/إنترنت">كهرباء/مياه/إنترنت</option>
+                        <option value="صيانة وتشغيل">صيانة وتشغيل</option>
+                        <option value="مستلزمات مكتبية">مستلزمات مكتبية</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>المدينة:</label>
+                    <select id="reportCity">
+                        <option value="الكل">جميع المدن</option>
+                        <option value="طرابلس">طرابلس</option>
+                        <option value="بنغازي">بنغازي</option>
+                        <option value="مصراتة">مصراتة</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>القسم / مركز التكلفة:</label>
+                    <select id="reportDept">
+                        <option value="الكل">جميع الأقسام</option>
+                        <option value="الإدارة العامة">الإدارة العامة</option>
+                        <option value="قسم المبيعات">قسم المبيعات</option>
+                        <option value="التشغيل والصيانة">التشغيل والصيانة</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>طريقة الدفع:</label>
+                    <select id="reportPayMethod">
+                        <option value="الكل">جميع الطرق</option>
+                        <option value="نقداً">نقداً</option>
+                        <option value="تحويل بنكي">تحويل بنكي</option>
+                        <option value="صك مصرفي">صك مصرفي</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button type="submit" class="btn btn-reports" style="flex:2; justify-content:center;">عرض التقرير</button>
+                    <button type="button" class="btn btn-reset" onclick="resetFilter(); closeModal('reportsModal');" style="flex:1; justify-content:center;">إعادة ضبط</button>
+                </div>
             </form>
         </div>
     </div>
@@ -292,16 +348,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('expDate').valueAsDate = new Date();
             renderTable(expensesData);
-            updateKPIs();
+            updateKPIs(expensesData);
         });
 
-        function updateKPIs() {
+        function updateKPIs(data) {
             let total = 0;
-            expensesData.forEach(item => total += item.amount);
+            data.forEach(item => total += item.amount);
             document.getElementById('totalExpense').innerText = total.toLocaleString() + ' د.ل';
             document.getElementById('yearExpense').innerText = total.toLocaleString() + ' د.ل';
             document.getElementById('monthExpense').innerText = total.toLocaleString() + ' د.ل';
-            document.getElementById('recordCount').innerText = expensesData.length;
+            document.getElementById('recordCount').innerText = data.length;
         }
 
         function renderTable(data) {
@@ -335,10 +391,22 @@
         function quickAdd(selectId, labelName) {
             const newItem = prompt(`أدخل اسم ${labelName} الجديد:`);
             if (newItem && newItem.trim() !== '') {
-                const select = document.getElementById(selectId);
-                const opt = document.createElement('option');
-                opt.value = newItem.trim(); opt.innerHTML = newItem.trim();
-                opt.selected = true; select.appendChild(opt);
+                const value = newItem.trim();
+                const selects = [selectId];
+                if (selectId === 'categorySelect') selects.push('reportCategory');
+                if (selectId === 'citySelect') selects.push('reportCity');
+                if (selectId === 'deptSelect') selects.push('reportDept');
+                if (selectId === 'paySelect') selects.push('reportPayMethod');
+
+                selects.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        const opt = document.createElement('option');
+                        opt.value = value; opt.innerHTML = value;
+                        el.appendChild(opt);
+                    }
+                });
+                document.getElementById(selectId).value = value;
             }
         }
 
@@ -355,8 +423,7 @@
                 desc: document.getElementById('expDesc').value
             };
             expensesData.unshift(newExpense);
-            renderTable(expensesData);
-            updateKPIs();
+            resetFilter();
             closeModal('addExpenseModal');
         }
 
@@ -364,13 +431,13 @@
             if (confirm('هل أنت تأكد من الحذف؟')) {
                 expensesData = expensesData.filter(item => item.id !== id);
                 renderTable(expensesData);
-                updateKPIs();
+                updateKPIs(expensesData);
             }
         }
 
         function searchTable() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = expensesData.filter(item => 
+            const filtered = currentlyDisplayedData.filter(item => 
                 item.desc.toLowerCase().includes(query) || 
                 item.category.toLowerCase().includes(query) ||
                 item.city.toLowerCase().includes(query)
@@ -378,10 +445,55 @@
             renderTable(filtered);
         }
 
-        // دالة التصدير المعدلة: جدول منسق وباتجاه من اليمين إلى اليسار (RTL)
+        // دالة تجميع الفلاتر وتطبيقاها على المنظومة والواجهة
+        function generateReport(e) {
+            e.preventDefault();
+            const fromDate = document.getElementById('reportFromDate').value;
+            const toDate = document.getElementById('reportToDate').value;
+            const category = document.getElementById('reportCategory').value;
+            const city = document.getElementById('reportCity').value;
+            const dept = document.getElementById('reportDept').value;
+            const payMethod = document.getElementById('reportPayMethod').value;
+
+            const filteredData = expensesData.filter(item => {
+                let matches = true;
+
+                if (fromDate && item.date < fromDate) matches = false;
+                if (toDate && item.date > toDate) matches = false;
+                if (category !== 'الكل' && item.category !== category) matches = false;
+                if (city !== 'الكل' && item.city !== city) matches = false;
+                if (dept !== 'الكل' && item.dept !== dept) matches = false;
+                if (payMethod !== 'الكل' && item.payMethod !== payMethod) matches = false;
+
+                return matches;
+            });
+
+            renderTable(filteredData);
+            updateKPIs(filteredData);
+            
+            document.getElementById('filterBadge').style.display = 'inline-block';
+            document.getElementById('resetFilterBtn').style.display = 'inline-flex';
+            closeModal('reportsModal');
+        }
+
+        function resetFilter() {
+            document.getElementById('reportFromDate').value = '';
+            document.getElementById('reportToDate').value = '';
+            document.getElementById('reportCategory').value = 'الكل';
+            document.getElementById('reportCity').value = 'الكل';
+            document.getElementById('reportDept').value = 'الكل';
+            document.getElementById('reportPayMethod').value = 'الكل';
+            document.getElementById('searchInput').value = '';
+
+            document.getElementById('filterBadge').style.display = 'none';
+            document.getElementById('resetFilterBtn').style.display = 'none';
+
+            renderTable(expensesData);
+            updateKPIs(expensesData);
+        }
+
         function exportToFormattedExcel() {
             let totalSum = 0;
-            
             let excelHTML = `
                 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
                 <head>
@@ -402,43 +514,22 @@
                     <![endif]-->
                     <style>
                         table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
-                        th { 
-                            background-color: #1e3c72; 
-                            color: #ffffff; 
-                            font-weight: bold; 
-                            border: 1px solid #102a56; 
-                            text-align: center; 
-                            padding: 10px 15px; 
-                            font-size: 14px;
-                        }
-                        td { 
-                            border: 1px solid #dcdcdc; 
-                            text-align: center; 
-                            padding: 8px 12px; 
-                            font-size: 13px;
-                            color: #333333;
-                        }
-                        tr:nth-child(even) td { background-color: #f9fbfd; }
-                        .total-row td { 
-                            background-color: #e2e8f0; 
-                            font-weight: bold; 
-                            border-top: 2px solid #1e3c72; 
-                            color: #0f172a;
-                            font-size: 14px;
-                        }
+                        th { background-color: #1e3c72; color: #ffffff; font-weight: bold; border: 1px solid #102a56; text-align: center; padding: 10px; }
+                        td { border: 1px solid #dcdcdc; text-align: center; padding: 8px; }
+                        .total-row td { background-color: #e2e8f0; font-weight: bold; border-top: 2px solid #1e3c72; }
                     </style>
                 </head>
                 <body dir="rtl">
                     <table>
                         <thead>
                             <tr>
-                                <th style="width:120px;">التاريخ</th>
-                                <th style="width:160px;">التصنيف</th>
-                                <th style="width:120px;">المدينة</th>
-                                <th style="width:180px;">القسم / مركز التكلفة</th>
-                                <th style="width:140px;">طريقة الدفع</th>
-                                <th style="width:130px;">المبلغ (د.ل)</th>
-                                <th style="width:280px;">البيان / الوصف</th>
+                                <th>التاريخ</th>
+                                <th>التصنيف</th>
+                                <th>المدينة</th>
+                                <th>القسم / مركز التكلفة</th>
+                                <th>طريقة الدفع</th>
+                                <th>المبلغ (د.ل)</th>
+                                <th>البيان / الوصف</th>
                             </tr>
                         </thead>
                         <tbody>`;
@@ -459,7 +550,7 @@
 
             excelHTML += `
                         <tr class="total-row">
-                            <td colspan="5" style="text-align: left; font-weight: bold; padding-left:15px;">إجمالي حركات الجدول المعروضة:</td>
+                            <td colspan="5" style="text-align: left; font-weight: bold;">إجمالي حركات التقرير:</td>
                             <td style="color: #0088ff; font-weight: bold;">${totalSum.toLocaleString()}</td>
                             <td></td>
                         </tr>
@@ -472,7 +563,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `حركات_المصروفات_${new Date().toISOString().slice(0,10)}.xls`;
+            a.download = `تقارير_المصروفات_${new Date().toISOString().slice(0,10)}.xls`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
