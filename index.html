@@ -1,48 +1,598 @@
-function editOption(selectId, labelName) {
-    const targetSelect = document.getElementById(selectId);
-    const selectedOption = targetSelect.options[targetSelect.selectedIndex];
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة إدارة مصروفات شركة أركان الدوائية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f4f7f6; color: #333; direction: rtl; }
+        
+        .header-bar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white; padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 15px;
+        }
+        .header-title h1 { font-size: 24px; margin-bottom: 5px; }
+        .header-title p { font-size: 13px; opacity: 0.85; }
+        .action-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn {
+            border: none; padding: 10px 18px; border-radius: 8px;
+            font-size: 14px; font-weight: bold; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease;
+        }
+        .btn-add { background-color: #0088ff; color: white; }
+        .btn-add:hover { background-color: #0066cc; }
+        .btn-excel { background-color: #28a745; color: white; }
+        .btn-excel:hover { background-color: #218838; }
+        .btn-reports { background-color: #17a2b8; color: white; }
+        .btn-reports:hover { background-color: #138496; }
+        .btn-reset { background-color: #6c757d; color: white; }
+        .btn-reset:hover { background-color: #5a6268; }
 
-    if (!selectedOption || selectedOption.disabled) {
-        alert(`يرجى اختيار ${labelName} لتعديله أولاً.`);
-        return;
-    }
+        .kpi-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px; padding: 25px 40px;
+        }
+        .kpi-card {
+            background: white; padding: 18px 22px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+            border-right: 5px solid #0088ff;
+        }
+        .kpi-card.yellow { border-right-color: #ffc107; }
+        .kpi-card.green { border-right-color: #28a745; }
+        .kpi-card.teal { border-right-color: #17a2b8; }
+        .kpi-info span { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
+        .kpi-info h2 { font-size: 22px; color: #1a2530; }
 
-    const oldValue = selectedOption.value;
-    const newValue = prompt(`تعديل اسم ${labelName}:`, oldValue);
+        .content-container { padding: 0 40px 40px 40px; }
+        .table-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto;
+        }
+        .table-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+        }
+        .filter-status { font-size: 13px; color: #17a2b8; font-weight: bold; background: #e0f7fa; padding: 5px 12px; border-radius: 6px; display: none; }
+        .search-box input {
+            padding: 8px 15px; border: 1px solid #ddd; border-radius: 6px; width: 250px; outline: none;
+        }
 
-    if (newValue && newValue.trim() !== '' && newValue.trim() !== oldValue) {
-        const updatedValue = newValue.trim();
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background-color: #f8fafc; color: #475569; font-weight: 600; }
+        tfoot tr { background-color: #f1f5f9; font-weight: bold; }
+        tfoot td { border-top: 2px solid #cbd5e1; color: #0f172a; font-size: 15px; }
+        .badge-cat { background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #334155; display: inline-block; }
+        .badge-city { background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 12px; font-size: 12px; display: inline-block; }
 
-        // 1. تحديث القائمة المنسدلة في نافذة الإدخال
-        selectedOption.value = updatedValue;
-        selectedOption.textContent = updatedValue;
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: white; width: 90%; max-width: 550px; max-height: 90vh;
+            overflow-y: auto; border-radius: 12px; padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2); position: relative;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 20px;
+        }
+        .modal-header h3 { font-size: 18px; color: #1e3c72; }
+        .close-btn { cursor: pointer; font-size: 22px; color: #aaa; }
+        .close-btn:hover { color: #333; }
 
-        // 2. تحديث القائمة المنسدلة في نافذة التقارير
-        let reportSelectId = '';
-        if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
-        if (selectId === 'citySelect') reportSelectId = 'reportCity';
-        if (selectId === 'deptSelect') reportSelectId = 'reportDept';
-        if (selectId === 'paySelect') reportSelectId = 'reportPayMethod';
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+        .input-group { display: flex; gap: 8px; }
+        select, input, textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-size: 14px; outline: none; background-color: #f8fafc;
+        }
+        select:focus, input:focus, textarea:focus { border-color: #007bff; background-color: #fff; }
+        .btn-plus {
+            background-color: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;
+            border-radius: 8px; width: 42px; height: 42px; font-size: 18px;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
+        }
+        .btn-plus:hover { background-color: #007bff; color: white; border-color: #007bff; }
+        .form-row { display: flex; gap: 15px; }
 
-        if (reportSelectId) {
-            const reportSelect = document.getElementById(reportSelectId);
-            for (let opt of reportSelect.options) {
-                if (opt.value === oldValue) {
-                    opt.value = updatedValue;
-                    opt.textContent = updatedValue;
-                    break;
+        @media (max-width: 768px) {
+            .header-bar, .kpi-container, .content-container { padding: 15px; }
+            .form-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="header-title">
+            <h1>منظومة إدارة مصروفات شركة أركان الدوائية</h1>
+            <p>التقارير الشهرية وإدخال الحركات</p>
+        </div>
+        <div class="action-buttons">
+            <button class="btn btn-add" onclick="openModal('addExpenseModal')">
+                <i class="fa-solid fa-plus"></i> إضافة مصروف جديد
+            </button>
+            <button class="btn btn-excel" onclick="exportToFormattedExcel()">
+                <i class="fa-solid fa-file-excel"></i> تصدير إكسل
+            </button>
+            <button class="btn btn-reports" onclick="openModal('reportsModal')">
+                <i class="fa-solid fa-chart-line"></i> تقارير المصروفات
+            </button>
+            <button class="btn btn-reset" id="resetFilterBtn" style="display:none;" onclick="resetFilter()">
+                <i class="fa-solid fa-rotate-left"></i> عرض الكل
+            </button>
+        </div>
+    </div>
+
+    <div class="kpi-container">
+        <div class="kpi-card teal">
+            <div class="kpi-info">
+                <span>إجمالي التقرير / المصروف الكلي</span>
+                <h2 id="totalExpense">0.00 د.ل</h2>
+            </div>
+        </div>
+        <div class="kpi-card green">
+            <div class="kpi-info">
+                <span>مصروفات السنة الحالية</span>
+                <h2 id="yearExpense">0.00 د.ل</h2>
+            </div>
+        </div>
+        <div class="kpi-card yellow">
+            <div class="kpi-info">
+                <span>مصروفات الشهر الحالي</span>
+                <h2 id="monthExpense">0.00 د.ل</h2>
+            </div>
+        </div>
+        <div class="kpi-card teal">
+            <div class="kpi-info">
+                <span>عدد العمليات المسجلة</span>
+                <h2 id="recordCount">0</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="table-card">
+            <div class="table-header">
+                <div>
+                    <h3 style="display:inline-block; margin-left:10px;">حركات المصروفات</h3>
+                    <span id="filterBadge" class="filter-status"><i class="fa-solid fa-filter"></i> نتائج تصفية التقرير</span>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="بحث سريع...">
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>التصنيف</th>
+                        <th>المدينة</th>
+                        <th>القسم / مركز التكلفة</th>
+                        <th>طريقة الدفع</th>
+                        <th>المبلغ</th>
+                        <th>البيان / الوصف</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="expenseTableBody"></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5" style="text-align: left; font-weight: bold;">إجمالي حركات الجدول المعروضة:</td>
+                        <td><strong id="tableTotalSum" style="color: #0088ff;">0.00 د.ل</strong></td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة مصروف -->
+    <div class="modal" id="addExpenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>إدخال المصروفات</h3>
+                <span class="close-btn" onclick="closeModal('addExpenseModal')">&times;</span>
+            </div>
+            <form id="expenseForm" onsubmit="saveExpense(event)">
+                <div class="form-group">
+                    <label>التاريخ</label>
+                    <input type="date" id="expDate" required>
+                </div>
+                <div class="form-group">
+                    <label>التصنيف</label>
+                    <div class="input-group">
+                        <select id="categorySelect" required>
+                            <option value="" disabled selected>اختر أو أضف تصنيف...</option>
+                        </select>
+                        <button type="button" class="btn-plus" onclick="quickAdd('categorySelect', 'التصنيف')">+</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>المدينة</label>
+                    <div class="input-group">
+                        <select id="citySelect" required>
+                            <option value="" disabled selected>اختر أو أضف مدينة...</option>
+                        </select>
+                        <button type="button" class="btn-plus" onclick="quickAdd('citySelect', 'المدينة')">+</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>القسم / مركز التكلفة</label>
+                    <div class="input-group">
+                        <select id="deptSelect" required>
+                            <option value="" disabled selected>اختر أو أضف قسم...</option>
+                        </select>
+                        <button type="button" class="btn-plus" onclick="quickAdd('deptSelect', 'القسم')">+</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>طريقة الدفع</label>
+                    <div class="input-group">
+                        <select id="paySelect" required>
+                            <option value="" disabled selected>اختر أو أضف طريقة دفع...</option>
+                        </select>
+                        <button type="button" class="btn-plus" onclick="quickAdd('paySelect', 'طريقة الدفع')">+</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>المبلغ (د.ل)</label>
+                    <input type="number" id="expAmount" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label>البيان / الوصف</label>
+                    <textarea id="expDesc" rows="2" placeholder="اكتب تفاصيل الفاتورة..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-add" style="width: 100%; justify-content: center;">حفظ المصروف</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تقارير المصروفات الموسعة -->
+    <div class="modal" id="reportsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📊 تقارير المصروفات المتقدمة</h3>
+                <span class="close-btn" onclick="closeModal('reportsModal')">&times;</span>
+            </div>
+            <form onsubmit="generateReport(event)">
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label>من تاريخ:</label>
+                        <input type="date" id="reportFromDate">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>إلى تاريخ:</label>
+                        <input type="date" id="reportToDate">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>التصنيف:</label>
+                    <select id="reportCategory">
+                        <option value="الكل">جميع التصنيفات</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>المدينة:</label>
+                    <select id="reportCity">
+                        <option value="الكل">جميع المدن</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>القسم / مركز التكلفة:</label>
+                    <select id="reportDept">
+                        <option value="الكل">جميع الأقسام</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>طريقة الدفع:</label>
+                    <select id="reportPayMethod">
+                        <option value="الكل">جميع الطرق</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button type="submit" class="btn btn-reports" style="flex:2; justify-content:center;">عرض التقرير</button>
+                    <button type="button" class="btn btn-reset" onclick="resetFilter(); closeModal('reportsModal');" style="flex:1; justify-content:center;">إعادة ضبط</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let expensesData = [];
+        let currentlyDisplayedData = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('expDate').valueAsDate = new Date();
+            renderTable(expensesData);
+            updateKPIs(expensesData);
+        });
+
+        function updateKPIs(data) {
+            let total = 0;
+            data.forEach(item => total += item.amount);
+            document.getElementById('totalExpense').innerText = total.toLocaleString() + ' د.ل';
+            document.getElementById('yearExpense').innerText = total.toLocaleString() + ' د.ل';
+            document.getElementById('monthExpense').innerText = total.toLocaleString() + ' د.ل';
+            document.getElementById('recordCount').innerText = data.length;
+        }
+
+        function renderTable(data) {
+            currentlyDisplayedData = data;
+            const tbody = document.getElementById('expenseTableBody');
+            tbody.innerHTML = '';
+            let currentTableSum = 0;
+
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888; padding:20px;">لا توجد مصروفات مسجلة حالياً. استخدم زر (+) لإضافة مصروفات وحقول جديدة.</td></tr>`;
+            } else {
+                data.forEach(item => {
+                    currentTableSum += item.amount;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${item.date}</td>
+                        <td><span class="badge-cat">${item.category}</span></td>
+                        <td><span class="badge-city">${item.city}</span></td>
+                        <td>${item.dept}</td>
+                        <td>${item.payMethod}</td>
+                        <td><strong>${item.amount.toLocaleString()} د.ل</strong></td>
+                        <td>${item.desc}</td>
+                        <td><button style="border:none; background:none; cursor:pointer;" onclick="deleteExpense(${item.id})">🗑️</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('tableTotalSum').innerText = currentTableSum.toLocaleString() + ' د.ل';
+        }
+
+        function openModal(id) { 
+            if (id === 'addExpenseModal') {
+                document.getElementById('expenseForm').reset();
+                document.getElementById('expDate').valueAsDate = new Date();
+            }
+            document.getElementById(id).style.display = 'flex'; 
+        }
+
+        function closeModal(id) { 
+            document.getElementById(id).style.display = 'none'; 
+        }
+
+        function quickAdd(selectId, labelName) {
+            const newItem = prompt(`أدخل اسم ${labelName} الجديد:`);
+            if (newItem && newItem.trim() !== '') {
+                const value = newItem.trim();
+                const targetSelect = document.getElementById(selectId);
+
+                let exists = false;
+                for (let i = 0; i < targetSelect.options.length; i++) {
+                    if (targetSelect.options[i].value === value) {
+                        exists = true;
+                        break;
+                    }
                 }
+
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = value;
+                    opt.innerHTML = value;
+                    targetSelect.appendChild(opt);
+
+                    let reportSelectId = '';
+                    if (selectId === 'categorySelect') reportSelectId = 'reportCategory';
+                    if (selectId === 'citySelect') reportSelectId = 'reportCity';
+                    if (selectId === 'deptSelect') reportSelectId = 'reportDept';
+                    if (selectId === 'paySelect') reportSelectId = 'reportPayMethod';
+
+                    if (reportSelectId) {
+                        const reportSelect = document.getElementById(reportSelectId);
+                        const reportOpt = document.createElement('option');
+                        reportOpt.value = value;
+                        reportOpt.innerHTML = value;
+                        reportSelect.appendChild(reportOpt);
+                    }
+                }
+
+                targetSelect.value = value;
             }
         }
 
-        // 3. تحديث البيانات المسجلة سابقاً في الجدول
-        expensesData.forEach(item => {
-            if (selectId === 'categorySelect' && item.category === oldValue) item.category = updatedValue;
-            if (selectId === 'citySelect' && item.city === oldValue) item.city = updatedValue;
-            if (selectId === 'deptSelect' && item.dept === oldValue) item.dept = updatedValue;
-            if (selectId === 'paySelect' && item.payMethod === oldValue) item.payMethod = updatedValue;
-        });
+        function saveExpense(e) {
+            e.preventDefault();
+            const newExpense = {
+                id: Date.now(),
+                date: document.getElementById('expDate').value,
+                category: document.getElementById('categorySelect').value,
+                city: document.getElementById('citySelect').value,
+                dept: document.getElementById('deptSelect').value,
+                payMethod: document.getElementById('paySelect').value,
+                amount: parseFloat(document.getElementById('expAmount').value),
+                desc: document.getElementById('expDesc').value
+            };
+            expensesData.unshift(newExpense);
+            resetFilter();
+            document.getElementById('expenseForm').reset();
+            document.getElementById('expDate').valueAsDate = new Date();
+            closeModal('addExpenseModal');
+        }
 
-        renderTable(currentlyDisplayedData);
-    }
-}
+        function deleteExpense(id) {
+            if (confirm('هل أنت تأكد من الحذف؟')) {
+                expensesData = expensesData.filter(item => item.id !== id);
+                renderTable(expensesData);
+                updateKPIs(expensesData);
+            }
+        }
+
+        function searchTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = currentlyDisplayedData.filter(item => 
+                item.desc.toLowerCase().includes(query) || 
+                item.category.toLowerCase().includes(query) ||
+                item.city.toLowerCase().includes(query)
+            );
+            renderTable(filtered);
+        }
+
+        function generateReport(e) {
+            e.preventDefault();
+            const fromDate = document.getElementById('reportFromDate').value;
+            const toDate = document.getElementById('reportToDate').value;
+            const category = document.getElementById('reportCategory').value;
+            const city = document.getElementById('reportCity').value;
+            const dept = document.getElementById('reportDept').value;
+            const payMethod = document.getElementById('reportPayMethod').value;
+
+            const filteredData = expensesData.filter(item => {
+                let matches = true;
+
+                if (fromDate && item.date < fromDate) matches = false;
+                if (toDate && item.date > toDate) matches = false;
+                if (category !== 'الكل' && item.category !== category) matches = false;
+                if (city !== 'الكل' && item.city !== city) matches = false;
+                if (dept !== 'الكل' && item.dept !== dept) matches = false;
+                if (payMethod !== 'الكل' && item.payMethod !== payMethod) matches = false;
+
+                return matches;
+            });
+
+            renderTable(filteredData);
+            updateKPIs(filteredData);
+            
+            document.getElementById('filterBadge').style.display = 'inline-block';
+            document.getElementById('resetFilterBtn').style.display = 'inline-flex';
+            closeModal('reportsModal');
+        }
+
+        function resetFilter() {
+            document.getElementById('reportFromDate').value = '';
+            document.getElementById('reportToDate').value = '';
+            document.getElementById('reportCategory').value = 'الكل';
+            document.getElementById('reportCity').value = 'الكل';
+            document.getElementById('reportDept').value = 'الكل';
+            document.getElementById('reportPayMethod').value = 'الكل';
+            document.getElementById('searchInput').value = '';
+
+            document.getElementById('filterBadge').style.display = 'none';
+            document.getElementById('resetFilterBtn').style.display = 'none';
+
+            renderTable(expensesData);
+            updateKPIs(expensesData);
+        }
+
+        function exportToFormattedExcel() {
+            let totalSum = 0;
+            
+            let excelHTML = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="utf-8" />
+                    <!--[if gte mso 9]>
+                    <xml>
+                        <x:ExcelWorkbook>
+                            <x:ExcelWorksheets>
+                                <x:ExcelWorksheet>
+                                    <x:Name>حركات المصروفات</x:Name>
+                                    <x:WorksheetOptions>
+                                        <x:DisplayRightToLeft/>
+                                    </x:WorksheetOptions>
+                                </x:ExcelWorksheet>
+                            </x:ExcelWorksheets>
+                        </x:ExcelWorkbook>
+                    </xml>
+                    <![endif]-->
+                    <style>
+                        table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+                        th { 
+                            background-color: #1e3c72; 
+                            color: #ffffff; 
+                            font-weight: bold; 
+                            border: 1px solid #102a56; 
+                            text-align: center; 
+                            padding: 6px 10px; 
+                            font-size: 9pt;
+                        }
+                        td { 
+                            border: 1px solid #dcdcdc; 
+                            text-align: center; 
+                            padding: 5px 8px; 
+                            font-size: 9pt;
+                            color: #333333;
+                        }
+                        tr:nth-child(even) td { background-color: #f9fbfd; }
+                        .total-row td { 
+                            background-color: #e2e8f0; 
+                            font-weight: bold; 
+                            border-top: 2px solid #1e3c72; 
+                            color: #0f172a;
+                            font-size: 9pt;
+                        }
+                    </style>
+                </head>
+                <body dir="rtl">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:100px;">التاريخ</th>
+                                <th style="width:140px;">التصنيف</th>
+                                <th style="width:100px;">المدينة</th>
+                                <th style="width:160px;">القسم / مركز التكلفة</th>
+                                <th style="width:120px;">طريقة الدفع</th>
+                                <th style="width:110px;">المبلغ (د.ل)</th>
+                                <th style="width:250px;">البيان / الوصف</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            currentlyDisplayedData.forEach(item => {
+                totalSum += item.amount;
+                excelHTML += `
+                    <tr>
+                        <td>${item.date}</td>
+                        <td>${item.category}</td>
+                        <td>${item.city}</td>
+                        <td>${item.dept}</td>
+                        <td>${item.payMethod}</td>
+                        <td style="font-weight:bold; color:#0056b3;">${item.amount.toLocaleString()}</td>
+                        <td style="text-align:right;">${item.desc}</td>
+                    </tr>`;
+            });
+
+            excelHTML += `
+                        <tr class="total-row">
+                            <td colspan="5" style="text-align: left; font-weight: bold; padding-left:10px;">إجمالي حركات التقرير:</td>
+                            <td style="color: #0088ff; font-weight: bold;">${totalSum.toLocaleString()}</td>
+                            <td></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </body>
+                </html>`;
+
+            const blob = new Blob(['\ufeff' + excelHTML], { type: 'application/vnd.ms-excel;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `تقارير_المصروفات_${new Date().toISOString().slice(0,10)}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
