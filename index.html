@@ -649,7 +649,7 @@
             updateFilteredKPIs(expensesData);
         }
 
-        // دالة التصدير لإكسل مع التظليل الكامل للرؤوس ولون الخط الأبيض
+        // دالة التصدير لإكسل مع التظليل، حل مشكلة التاريخ المتقلص، وحساب المجموع بدقة
         function exportToFormattedExcel() {
             if (currentlyDisplayedData.length === 0) {
                 alert('لا توجد بيانات لتصديرها.');
@@ -657,6 +657,8 @@
             }
 
             const totalAmount = currentlyDisplayedData.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const startRow = 2; // بداية بيانات جدول الإكسل
+            const endRow = currentlyDisplayedData.length + 1; // نهاية بيانات الجدول
 
             let htmlContent = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -678,7 +680,8 @@
                 <![endif]-->
                 <style>
                     table { border-collapse: collapse; width: 100%; direction: rtl; font-family: Calibri, sans-serif; }
-                    /* تظليل وتنسيق رؤوس الجدول في إكسل */
+                    
+                    /* رؤوس الجدول المصدر لإكسل */
                     th { 
                         background-color: #1e3c72; 
                         color: #ffffff; 
@@ -689,7 +692,13 @@
                         font-size: 14px;
                     }
                     td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: center; }
+                    
+                    /* معالجة اتساع عمود التاريخ لتجنب ظهور ####### */
+                    .date-cell { text-align: center; mso-number-format:"Short Date"; width: 150px; }
+                    
+                    /* تخصيص الرقم ليتمكن إكسل من جمعه بصيغة رقمية وليست نصية */
                     .num { text-align: right; mso-number-format:"\#\,\#\#0\.00"; }
+                    
                     .total-label { background-color: #f1f5f9; font-weight: bold; text-align: center; }
                     .total-value { background-color: #e2e8f0; font-weight: bold; text-align: right; mso-number-format:"\#\,\#\#0\.00"; color: #0088ff; }
                 </style>
@@ -698,37 +707,35 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 110px; background-color: #1e3c72; color: #ffffff;">التاريخ</th>
+                            <th style="width: 150px; background-color: #1e3c72; color: #ffffff;">التاريخ</th>
                             <th style="width: 130px; background-color: #1e3c72; color: #ffffff;">التصنيف</th>
                             <th style="width: 110px; background-color: #1e3c72; color: #ffffff;">المدينة</th>
                             <th style="width: 160px; background-color: #1e3c72; color: #ffffff;">القسم / مركز التكلفة</th>
                             <th style="width: 130px; background-color: #1e3c72; color: #ffffff;">طريقة الدفع</th>
-                            <th style="width: 120px; background-color: #1e3c72; color: #ffffff;">المبلغ (د.ل)</th>
+                            <th style="width: 130px; background-color: #1e3c72; color: #ffffff;">المبلغ (د.ل)</th>
                             <th style="width: 250px; background-color: #1e3c72; color: #ffffff;">البيان / الوصف</th>
                         </tr>
                     </thead>
                     <tbody>`;
 
             currentlyDisplayedData.forEach(item => {
+                const val = parseFloat(item.amount) || 0;
                 htmlContent += `
                     <tr>
-                        <td>${item.date || ''}</td>
+                        <td class="date-cell">${item.date || ''}</td>
                         <td>${item.category || ''}</td>
                         <td>${item.city || ''}</td>
                         <td>${item.dept || ''}</td>
                         <td>${item.payMethod || ''}</td>
-                        <td class="num">${parseFloat(item.amount) || 0}</td>
+                        <td class="num" x:num="${val}">${val}</td>
                         <td style="text-align: right;">${item.desc || ''}</td>
                     </tr>`;
             });
 
-            const startRow = 2;
-            const endRow = currentlyDisplayedData.length + 1;
-            
             htmlContent += `
                     <tr>
                         <td colspan="5" class="total-label">الإجمالي</td>
-                        <td class="total-value" x:fmla="=SUM(F${startRow}:F${endRow})">${totalAmount}</td>
+                        <td class="total-value" x:num="${totalAmount}" x:fmla="=SUM(F${startRow}:F${endRow})">${totalAmount}</td>
                         <td></td>
                     </tr>
                     </tbody>
