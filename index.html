@@ -230,7 +230,8 @@
             <form id="expenseForm" onsubmit="saveExpense(event)">
                 <div class="form-group">
                     <label>التاريخ</label>
-                    <input type="date" id="expDate" required>
+                    <!-- أضيف خاصية max لقفل التواريخ القادمة -->
+                    <input type="date" id="expDate" max="" required>
                 </div>
                 <div class="form-group">
                     <label>التصنيف</label>
@@ -355,6 +356,7 @@
             const expDateInput = document.getElementById('expDate');
             
             expDateInput.value = todayStr;
+            expDateInput.max = todayStr; // تقييد التاريخ ليمنع التواريخ المستقبلية
             
             const savedData = localStorage.getItem('arkan_expenses');
             if (savedData) expensesData = JSON.parse(savedData);
@@ -490,7 +492,10 @@
             if (id === 'addExpenseModal') {
                 document.getElementById('expenseForm').reset();
                 const todayStr = new Date().toISOString().split('T')[0];
-                document.getElementById('expDate').value = todayStr;
+                const expDateInput = document.getElementById('expDate');
+                
+                expDateInput.value = todayStr;
+                expDateInput.max = todayStr; // التأكيد على إيقاف اختيار الأيام المستقبلية
             }
             document.getElementById(id).style.display = 'flex'; 
         }
@@ -558,6 +563,13 @@
         function saveExpense(e) {
             e.preventDefault();
             const selectedDate = document.getElementById('expDate').value;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            // حماية إضافية للتحقق من عدم تجاوز التاريخ لليوم الحالي
+            if (selectedDate > todayStr) {
+                alert("لا يمكن إضافة مصروف بتاريخ مستقبلي.");
+                return;
+            }
 
             const newExpense = {
                 id: Date.now(),
@@ -649,7 +661,7 @@
             updateFilteredKPIs(expensesData);
         }
 
-        // دالة التصدير لإكسل مع التظليل، حل مشكلة التاريخ المتقلص، وحساب المجموع بدقة
+        // دالة التصدير لإكسل مع التظليل وتنسيق التواريخ والأرقام
         function exportToFormattedExcel() {
             if (currentlyDisplayedData.length === 0) {
                 alert('لا توجد بيانات لتصديرها.');
@@ -657,8 +669,8 @@
             }
 
             const totalAmount = currentlyDisplayedData.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-            const startRow = 2; // بداية بيانات جدول الإكسل
-            const endRow = currentlyDisplayedData.length + 1; // نهاية بيانات الجدول
+            const startRow = 2;
+            const endRow = currentlyDisplayedData.length + 1;
 
             let htmlContent = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -680,8 +692,6 @@
                 <![endif]-->
                 <style>
                     table { border-collapse: collapse; width: 100%; direction: rtl; font-family: Calibri, sans-serif; }
-                    
-                    /* رؤوس الجدول المصدر لإكسل */
                     th { 
                         background-color: #1e3c72; 
                         color: #ffffff; 
@@ -692,13 +702,8 @@
                         font-size: 14px;
                     }
                     td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: center; }
-                    
-                    /* معالجة اتساع عمود التاريخ لتجنب ظهور ####### */
                     .date-cell { text-align: center; mso-number-format:"Short Date"; width: 150px; }
-                    
-                    /* تخصيص الرقم ليتمكن إكسل من جمعه بصيغة رقمية وليست نصية */
                     .num { text-align: right; mso-number-format:"\#\,\#\#0\.00"; }
-                    
                     .total-label { background-color: #f1f5f9; font-weight: bold; text-align: center; }
                     .total-value { background-color: #e2e8f0; font-weight: bold; text-align: right; mso-number-format:"\#\,\#\#0\.00"; color: #0088ff; }
                 </style>
