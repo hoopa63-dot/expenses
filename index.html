@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة إدارة مصروفات شركة أركان الدوائية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- مكتبة SheetJS لتصدير إكسل الحقيقي -->
+    <!-- مكتبة SheetJS لتصدير إكسل -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
@@ -67,7 +67,15 @@
 
         table { width: 100%; border-collapse: collapse; text-align: right; }
         th, td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
-        th { background-color: #f8fafc; color: #475569; font-weight: 600; }
+        
+        /* تظليل رؤوس الجدول لصفحة الويب */
+        th { 
+            background-color: #1e3c72; 
+            color: #ffffff; 
+            font-weight: 600; 
+            letter-spacing: 0.5px;
+        }
+        
         tfoot tr { background-color: #f1f5f9; font-weight: bold; }
         tfoot td { border-top: 2px solid #cbd5e1; color: #0f172a; font-size: 15px; }
         .badge-cat { background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #334155; display: inline-block; }
@@ -641,57 +649,101 @@
             updateFilteredKPIs(expensesData);
         }
 
-        // دالة تصدير ملف الإكسل المحدثة (RTL + SUM + دمج الخلايا + ضبط الأبعاد)
+        // دالة التصدير لإكسل مع التظليل الكامل للرؤوس ولون الخط الأبيض
         function exportToFormattedExcel() {
             if (currentlyDisplayedData.length === 0) {
                 alert('لا توجد بيانات لتصديرها.');
                 return;
             }
 
-            const exportData = currentlyDisplayedData.map(item => ({
-                'التاريخ': item.date,
-                'التصنيف': item.category,
-                'المدينة': item.city,
-                'القسم / مركز التكلفة': item.dept,
-                'طريقة الدفع': item.payMethod,
-                'المبلغ (د.ل)': parseFloat(item.amount) || 0,
-                'البيان / الوصف': item.desc || ''
-            }));
+            const totalAmount = currentlyDisplayedData.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
 
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            let htmlContent = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <!--[if gte mso 9]>
+                <xml>
+                    <x:ExcelWorkbook>
+                        <x:ExcelWorksheets>
+                            <x:ExcelWorksheet>
+                                <x:Name>تقرير المصروفات</x:Name>
+                                <x:WorksheetOptions>
+                                    <x:DisplayRightToLeft/>
+                                </x:WorksheetOptions>
+                            </x:ExcelWorksheet>
+                        </x:ExcelWorksheets>
+                    </x:ExcelWorkbook>
+                </xml>
+                <![endif]-->
+                <style>
+                    table { border-collapse: collapse; width: 100%; direction: rtl; font-family: Calibri, sans-serif; }
+                    /* تظليل وتنسيق رؤوس الجدول في إكسل */
+                    th { 
+                        background-color: #1e3c72; 
+                        color: #ffffff; 
+                        border: 1px solid #0f2142; 
+                        padding: 10px; 
+                        text-align: center; 
+                        font-weight: bold; 
+                        font-size: 14px;
+                    }
+                    td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: center; }
+                    .num { text-align: right; mso-number-format:"\#\,\#\#0\.00"; }
+                    .total-label { background-color: #f1f5f9; font-weight: bold; text-align: center; }
+                    .total-value { background-color: #e2e8f0; font-weight: bold; text-align: right; mso-number-format:"\#\,\#\#0\.00"; color: #0088ff; }
+                </style>
+            </head>
+            <body>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 110px; background-color: #1e3c72; color: #ffffff;">التاريخ</th>
+                            <th style="width: 130px; background-color: #1e3c72; color: #ffffff;">التصنيف</th>
+                            <th style="width: 110px; background-color: #1e3c72; color: #ffffff;">المدينة</th>
+                            <th style="width: 160px; background-color: #1e3c72; color: #ffffff;">القسم / مركز التكلفة</th>
+                            <th style="width: 130px; background-color: #1e3c72; color: #ffffff;">طريقة الدفع</th>
+                            <th style="width: 120px; background-color: #1e3c72; color: #ffffff;">المبلغ (د.ل)</th>
+                            <th style="width: 250px; background-color: #1e3c72; color: #ffffff;">البيان / الوصف</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
 
-            // تفعيل الاتجاه من اليمين للصار (RTL)
-            if (!worksheet['!views']) worksheet['!views'] = [{}];
-            worksheet['!views'][0] = { RTL: true };
-
-            // تحديد عروض الأعمدة
-            worksheet['!cols'] = [
-                { wch: 15 },
-                { wch: 18 },
-                { wch: 15 },
-                { wch: 22 },
-                { wch: 18 },
-                { wch: 18 },
-                { wch: 35 }
-            ];
-
-            // إضافة معادلة SUM الجمع التلقائي
-            const lastRowIndex = exportData.length + 2;
-            XLSX.utils.sheet_add_aoa(worksheet, [
-                ['الإجمالي', '', '', '', '', { t: 'n', f: `SUM(F2:F${lastRowIndex - 1})` }, '']
-            ], { origin: `A${lastRowIndex}` });
-
-            // دمج الخلايا في صف الإجمالي
-            if (!worksheet['!merges']) worksheet['!merges'] = [];
-            worksheet['!merges'].push({
-                s: { r: lastRowIndex - 1, c: 0 },
-                e: { r: lastRowIndex - 1, c: 4 }
+            currentlyDisplayedData.forEach(item => {
+                htmlContent += `
+                    <tr>
+                        <td>${item.date || ''}</td>
+                        <td>${item.category || ''}</td>
+                        <td>${item.city || ''}</td>
+                        <td>${item.dept || ''}</td>
+                        <td>${item.payMethod || ''}</td>
+                        <td class="num">${parseFloat(item.amount) || 0}</td>
+                        <td style="text-align: right;">${item.desc || ''}</td>
+                    </tr>`;
             });
 
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'تقرير المصروفات');
+            const startRow = 2;
+            const endRow = currentlyDisplayedData.length + 1;
+            
+            htmlContent += `
+                    <tr>
+                        <td colspan="5" class="total-label">الإجمالي</td>
+                        <td class="total-value" x:fmla="=SUM(F${startRow}:F${endRow})">${totalAmount}</td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </body>
+            </html>`;
 
-            XLSX.writeFile(workbook, `تقرير_المصروفات_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `تقرير_المصروفات_${new Date().toISOString().slice(0, 10)}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
     </script>
 </body>
