@@ -6,6 +6,8 @@
     <title>منظومة إدارة مصروفات الشركة</title>
     <!-- FontAwesome Icons for UI -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (xlsx) for Exporting Formatted Excel Files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -483,6 +485,8 @@
             { id: 3, date: '2026-08-05', category: 'مستلزمات مكتبية', city: 'مصراتة', dept: 'قسم المبيعات', payMethod: 'نقداً', amount: 320, desc: 'شراء القرطاسية وأوراق طباعة' }
         ];
 
+        let currentlyDisplayedData = [...expensesData];
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('expDate').valueAsDate = new Date();
             renderTable(expensesData);
@@ -518,6 +522,7 @@
 
         // Render Table Data & Calculate Footer Total
         function renderTable(data) {
+            currentlyDisplayedData = data;
             const tbody = document.getElementById('expenseTableBody');
             tbody.innerHTML = '';
 
@@ -541,7 +546,6 @@
                 tbody.appendChild(tr);
             });
 
-            // Update footer sum dynamically for displayed data
             document.getElementById('tableTotalSum').innerText = currentTableSum.toLocaleString() + ' د.ل';
         }
 
@@ -563,7 +567,6 @@
                 opt.selected = true;
                 select.appendChild(opt);
 
-                // Sync with report filters if category is added
                 if (selectId === 'categorySelect') {
                     const reportSelect = document.getElementById('reportCategory');
                     const repOpt = document.createElement('option');
@@ -638,19 +641,50 @@
             renderTable(filtered);
         }
 
-        // Export to CSV
+        // Export Directly Formatted Excel File (.xlsx)
         function exportToExcel() {
-            let csvContent = "\uFEFFالتاريخ,التصنيف,المدينة,القسم,طريقة الدفع,المبلغ,البيان\n";
-            expensesData.forEach(item => {
-                csvContent += `"${item.date}","${item.category}","${item.city}","${item.dept}","${item.payMethod}",${item.amount},"${item.desc}"\n`;
+            let exportRows = [];
+
+            // 1. Headers identical to the UI table
+            exportRows.push(["التاريخ", "التصنيف", "المدينة", "القسم / مركز التكلفة", "طريقة الدفع", "المبلغ", "البيان / الوصف"]);
+
+            // 2. Data Rows
+            let totalSum = 0;
+            currentlyDisplayedData.forEach(item => {
+                totalSum += item.amount;
+                exportRows.push([
+                    item.date,
+                    item.category,
+                    item.city,
+                    item.dept,
+                    item.payMethod,
+                    item.amount,
+                    item.desc
+                ]);
             });
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'جدول_المصروفات.csv');
-            a.click();
+            // 3. Footer Total Row
+            exportRows.push(["إجمالي حركات الجدول المعروضة:", "", "", "", "", totalSum, ""]);
+
+            // Create Worksheet
+            const worksheet = XLSX.utils.aoa_to_sheet(exportRows);
+
+            // Auto Column Widths
+            worksheet['!cols'] = [
+                { wch: 15 }, // التاريخ
+                { wch: 20 }, // التصنيف
+                { wch: 15 }, // المدينة
+                { wch: 22 }, // القسم / مركز التكلفة
+                { wch: 18 }, // طريقة الدفع
+                { wch: 15 }, // المبلغ
+                { wch: 35 }  // البيان / الوصف
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "حركات المصروفات");
+
+            // Download File
+            XLSX.writeFile(workbook, `حركات_المصروفات_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
     </script>
 </body>
