@@ -35,7 +35,7 @@
         .btn-reset:hover { background-color: #5a6268; }
 
         .kpi-container {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px; padding: 25px 40px;
         }
         .kpi-card {
@@ -47,6 +47,7 @@
         .kpi-card.yellow { border-right-color: #ffc107; }
         .kpi-card.green { border-right-color: #28a745; }
         .kpi-card.teal { border-right-color: #17a2b8; }
+        .kpi-card.purple { border-right-color: #6f42c1; }
         .kpi-info span { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
         .kpi-info h2 { font-size: 22px; color: #1a2530; }
 
@@ -97,7 +98,7 @@
             border-radius: 8px; font-size: 14px; outline: none; background-color: #f8fafc;
         }
         
-        /* إصلاح اتجاه حقول التاريخ لمنع ظهور النص المقلوب */
+        /* ضبط اتجاه حقول التاريخ لمنع إظهار النص مقلوباً */
         input[type="date"] {
             direction: ltr;
             text-align: right;
@@ -146,25 +147,31 @@
     <div class="kpi-container">
         <div class="kpi-card teal">
             <div class="kpi-info">
-                <span>إجمالي التقرير / المصروف الكلي</span>
+                <span>المصروف الكلي (ثابت)</span>
                 <h2 id="totalExpense">0.00 د.ل</h2>
             </div>
         </div>
         <div class="kpi-card green">
             <div class="kpi-info">
-                <span>مصروفات السنة الحالية</span>
+                <span>مصروفات السنة الحالية (ثابت)</span>
                 <h2 id="yearExpense">0.00 د.ل</h2>
             </div>
         </div>
         <div class="kpi-card yellow">
             <div class="kpi-info">
-                <span>مصروفات الشهر الحالي</span>
+                <span>مصروفات الشهر الحالي (ثابت)</span>
                 <h2 id="monthExpense">0.00 د.ل</h2>
+            </div>
+        </div>
+        <div class="kpi-card purple" id="filteredTotalCard" style="display:none;">
+            <div class="kpi-info">
+                <span>إجمالي التقرير المفلتر</span>
+                <h2 id="filteredTotal">0.00 د.ل</h2>
             </div>
         </div>
         <div class="kpi-card teal">
             <div class="kpi-info">
-                <span>عدد العمليات المسجلة</span>
+                <span>عدد العمليات المعروضة</span>
                 <h2 id="recordCount">0</h2>
             </div>
         </div>
@@ -341,7 +348,6 @@
             const expDateInput = document.getElementById('expDate');
             
             expDateInput.value = todayStr;
-            expDateInput.max = todayStr;
             
             const savedData = localStorage.getItem('arkan_expenses');
             if (savedData) expensesData = JSON.parse(savedData);
@@ -355,7 +361,8 @@
 
             refreshAllSelects();
             renderTable(expensesData);
-            updateKPIs(expensesData);
+            calculateStaticKPIs();
+            updateFilteredKPIs(expensesData);
         });
 
         function saveToLocalStorage() {
@@ -398,32 +405,50 @@
             if (selectedVal) selectEl.value = selectedVal;
         }
 
-        function updateKPIs(data) {
+        // حساب البطاقات الثابتة نهائياً والتي لا تتأثر بالفلتر
+        function calculateStaticKPIs() {
             let total = 0;
             let currentYearTotal = 0;
             let currentMonthTotal = 0;
 
             const now = new Date();
             const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
+            const currentMonth = now.getMonth(); // 0 to 11
 
-            data.forEach(item => {
-                total += item.amount;
+            expensesData.forEach(item => {
+                const amt = parseFloat(item.amount) || 0;
+                total += amt;
+
                 if (item.date) {
-                    const itemDate = new Date(item.date);
-                    if (itemDate.getFullYear() === currentYear) {
-                        currentYearTotal += item.amount;
-                        if (itemDate.getMonth() === currentMonth) {
-                            currentMonthTotal += item.amount;
+                    const parts = item.date.split('-');
+                    if (parts.length === 3) {
+                        const itemYear = parseInt(parts[0], 10);
+                        const itemMonth = parseInt(parts[1], 10) - 1;
+
+                        if (itemYear === currentYear) {
+                            currentYearTotal += amt;
+                            if (itemMonth === currentMonth) {
+                                currentMonthTotal += amt;
+                            }
                         }
                     }
                 }
             });
 
-            document.getElementById('totalExpense').innerText = total.toLocaleString() + ' د.ل';
-            document.getElementById('yearExpense').innerText = currentYearTotal.toLocaleString() + ' د.ل';
-            document.getElementById('monthExpense').innerText = currentMonthTotal.toLocaleString() + ' د.ل';
-            document.getElementById('recordCount').innerText = data.length;
+            document.getElementById('totalExpense').innerText = total.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل';
+            document.getElementById('yearExpense').innerText = currentYearTotal.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل';
+            document.getElementById('monthExpense').innerText = currentMonthTotal.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل';
+        }
+
+        // تحديث البطاقات الخاصة بالبيانات المفلترة فقط
+        function updateFilteredKPIs(filteredData) {
+            let filterSum = 0;
+            filteredData.forEach(item => {
+                filterSum += (parseFloat(item.amount) || 0);
+            });
+
+            document.getElementById('recordCount').innerText = filteredData.length;
+            document.getElementById('filteredTotal').innerText = filterSum.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل';
         }
 
         function renderTable(data) {
@@ -433,10 +458,11 @@
             let currentTableSum = 0;
 
             if(data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888; padding:20px;">لا توجد مصروفات مسجلة حالياً. استخدم زر (+) لإضافة مصروفات وحقول جديدة.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888; padding:20px;">لا توجد مصروفات مسجلة حالياً.</td></tr>`;
             } else {
                 data.forEach(item => {
-                    currentTableSum += item.amount;
+                    const amt = parseFloat(item.amount) || 0;
+                    currentTableSum += amt;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${item.date}</td>
@@ -444,7 +470,7 @@
                         <td><span class="badge-city">${item.city}</span></td>
                         <td>${item.dept}</td>
                         <td>${item.payMethod}</td>
-                        <td><strong>${item.amount.toLocaleString()} د.ل</strong></td>
+                        <td><strong>${amt.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</strong></td>
                         <td>${item.desc}</td>
                         <td><button style="border:none; background:none; cursor:pointer;" onclick="deleteExpense(${item.id})">🗑️</button></td>
                     `;
@@ -452,16 +478,14 @@
                 });
             }
 
-            document.getElementById('tableTotalSum').innerText = currentTableSum.toLocaleString() + ' د.ل';
+            document.getElementById('tableTotalSum').innerText = currentTableSum.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل';
         }
 
         function openModal(id) { 
             if (id === 'addExpenseModal') {
                 document.getElementById('expenseForm').reset();
                 const todayStr = new Date().toISOString().split('T')[0];
-                const expDateInput = document.getElementById('expDate');
-                expDateInput.value = todayStr;
-                expDateInput.max = todayStr;
+                document.getElementById('expDate').value = todayStr;
             }
             document.getElementById(id).style.display = 'flex'; 
         }
@@ -529,12 +553,6 @@
         function saveExpense(e) {
             e.preventDefault();
             const selectedDate = document.getElementById('expDate').value;
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            if (selectedDate > todayStr) {
-                alert('لا يمكن إدخال مصروف بتاريخ مستقبلي.');
-                return;
-            }
 
             const newExpense = {
                 id: Date.now(),
@@ -549,9 +567,9 @@
             expensesData.unshift(newExpense);
             
             saveToLocalStorage();
+            calculateStaticKPIs();
             resetFilter();
             document.getElementById('expenseForm').reset();
-            document.getElementById('expDate').value = todayStr;
             closeModal('addExpenseModal');
         }
 
@@ -559,19 +577,21 @@
             if (confirm('هل أنت تأكد من الحذف؟')) {
                 expensesData = expensesData.filter(item => item.id !== id);
                 saveToLocalStorage();
+                calculateStaticKPIs();
                 renderTable(expensesData);
-                updateKPIs(expensesData);
+                updateFilteredKPIs(expensesData);
             }
         }
 
         function searchTable() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = currentlyDisplayedData.filter(item => 
-                item.desc.toLowerCase().includes(query) || 
-                item.category.toLowerCase().includes(query) ||
-                item.city.toLowerCase().includes(query)
+                (item.desc && item.desc.toLowerCase().includes(query)) || 
+                (item.category && item.category.toLowerCase().includes(query)) ||
+                (item.city && item.city.toLowerCase().includes(query))
             );
             renderTable(filtered);
+            updateFilteredKPIs(filtered);
         }
 
         function generateReport(e) {
@@ -597,8 +617,12 @@
             });
 
             renderTable(filteredData);
-            updateKPIs(filteredData);
             
+            // عدم المساس بالبطاقات الثابتة، وتحديث بطاقات النتائج المفلترة فقط
+            calculateStaticKPIs();
+            updateFilteredKPIs(filteredData);
+            
+            document.getElementById('filteredTotalCard').style.display = 'flex';
             document.getElementById('filterBadge').style.display = 'inline-block';
             document.getElementById('resetFilterBtn').style.display = 'inline-flex';
             closeModal('reportsModal');
@@ -613,11 +637,13 @@
             document.getElementById('reportPayMethod').value = 'الكل';
             document.getElementById('searchInput').value = '';
 
+            document.getElementById('filteredTotalCard').style.display = 'none';
             document.getElementById('filterBadge').style.display = 'none';
             document.getElementById('resetFilterBtn').style.display = 'none';
 
             renderTable(expensesData);
-            updateKPIs(expensesData);
+            calculateStaticKPIs();
+            updateFilteredKPIs(expensesData);
         }
 
         function exportToFormattedExcel() {
@@ -636,7 +662,7 @@
                 'البيان / الوصف': item.desc
             }));
 
-            const totalSum = currentlyDisplayedData.reduce((acc, curr) => acc + curr.amount, 0);
+            const totalSum = currentlyDisplayedData.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
             exportData.push({
                 'التاريخ': 'الإجمالي',
                 'التصنيف': '',
