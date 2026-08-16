@@ -98,7 +98,6 @@
             border-radius: 8px; font-size: 14px; outline: none; background-color: #f8fafc;
         }
         
-        /* ضبط اتجاه حقول التاريخ لمنع إظهار النص مقلوباً */
         input[type="date"] {
             direction: ltr;
             text-align: right;
@@ -405,7 +404,6 @@
             if (selectedVal) selectEl.value = selectedVal;
         }
 
-        // حساب البطاقات الثابتة نهائياً والتي لا تتأثر بالفلتر
         function calculateStaticKPIs() {
             let total = 0;
             let currentYearTotal = 0;
@@ -413,7 +411,7 @@
 
             const now = new Date();
             const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth(); // 0 to 11
+            const currentMonth = now.getMonth();
 
             expensesData.forEach(item => {
                 const amt = parseFloat(item.amount) || 0;
@@ -440,7 +438,6 @@
             document.getElementById('monthExpense').innerText = currentMonthTotal.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل';
         }
 
-        // تحديث البطاقات الخاصة بالبيانات المفلترة فقط
         function updateFilteredKPIs(filteredData) {
             let filterSum = 0;
             filteredData.forEach(item => {
@@ -617,8 +614,6 @@
             });
 
             renderTable(filteredData);
-            
-            // عدم المساس بالبطاقات الثابتة، وتحديث بطاقات النتائج المفلترة فقط
             calculateStaticKPIs();
             updateFilteredKPIs(filteredData);
             
@@ -646,6 +641,7 @@
             updateFilteredKPIs(expensesData);
         }
 
+        // دالة تصدير ملف الإكسل المحدثة (RTL + SUM + دمج الخلايا + ضبط الأبعاد)
         function exportToFormattedExcel() {
             if (currentlyDisplayedData.length === 0) {
                 alert('لا توجد بيانات لتصديرها.');
@@ -658,37 +654,44 @@
                 'المدينة': item.city,
                 'القسم / مركز التكلفة': item.dept,
                 'طريقة الدفع': item.payMethod,
-                'المبلغ (د.ل)': item.amount,
-                'البيان / الوصف': item.desc
+                'المبلغ (د.ل)': parseFloat(item.amount) || 0,
+                'البيان / الوصف': item.desc || ''
             }));
-
-            const totalSum = currentlyDisplayedData.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
-            exportData.push({
-                'التاريخ': 'الإجمالي',
-                'التصنيف': '',
-                'المدينة': '',
-                'القسم / مركز التكلفة': '',
-                'طريقة الدفع': '',
-                'المبلغ (د.ل)': totalSum,
-                'البيان / الوصف': ''
-            });
 
             const worksheet = XLSX.utils.json_to_sheet(exportData);
 
+            // تفعيل الاتجاه من اليمين للصار (RTL)
+            if (!worksheet['!views']) worksheet['!views'] = [{}];
+            worksheet['!views'][0] = { RTL: true };
+
+            // تحديد عروض الأعمدة
             worksheet['!cols'] = [
-                { wch: 16 },
-                { wch: 20 },
+                { wch: 15 },
+                { wch: 18 },
                 { wch: 15 },
                 { wch: 22 },
-                { wch: 16 },
-                { wch: 16 },
+                { wch: 18 },
+                { wch: 18 },
                 { wch: 35 }
             ];
+
+            // إضافة معادلة SUM الجمع التلقائي
+            const lastRowIndex = exportData.length + 2;
+            XLSX.utils.sheet_add_aoa(worksheet, [
+                ['الإجمالي', '', '', '', '', { t: 'n', f: `SUM(F2:F${lastRowIndex - 1})` }, '']
+            ], { origin: `A${lastRowIndex}` });
+
+            // دمج الخلايا في صف الإجمالي
+            if (!worksheet['!merges']) worksheet['!merges'] = [];
+            worksheet['!merges'].push({
+                s: { r: lastRowIndex - 1, c: 0 },
+                e: { r: lastRowIndex - 1, c: 4 }
+            });
 
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'تقرير المصروفات');
 
-            XLSX.writeFile(workbook, `تقارير_المصروفات_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            XLSX.writeFile(workbook, `تقرير_المصروفات_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
     </script>
 </body>
